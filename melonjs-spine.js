@@ -6,42 +6,59 @@
       if(isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
         throw "Ensure atlas, imagePath and spineData are specified in the settings hash";
       }
+      var image = me.loader.getImage(settings['imagePath']);
       this.settings = settings;
       this.time = null;
-      this.parent(x, y, settings);
+      this.initSpineObjects();
+      console.log(this.settings);
+      this.parent(x, y, this.settings);
       this.anchorPoint.x = 0.5;
       this.anchorPoint.y = 0.5;
-      this.initSpineObjects();
+      
       this.vertices = [];
+      this.isRenderable = true;
     },
 
-    draw: function(ctx, rect) {
-      this.parent(ctx, rect);
-
+    draw: function(context, rect) {
+      this.parent(context, rect);
       var drawOrder = this.skeleton.drawOrder;
       for (var i = 0, n = drawOrder.length; i < n; i++) {
         var slot = drawOrder[i];
         var attachment = slot.attachment;
         if (!(attachment instanceof spine.RegionAttachment)) continue;
-        attachment.computeVertices(this.skeleton.x, this.skeleton.y, slot.bone, this.vertices);
         var image = attachment.rendererObject.page.rendererObject;
-        ctx.save();
-        
-        ctx.restore();
-        
-        batch.add(
-          attachment.rendererObject.page.rendererObject,
-          this.vertices[0], this.vertices[1],
-          this.vertices[6], this.vertices[7],
-          this.vertices[2], this.vertices[3],
-          this.vertices[4], this.vertices[5],
-          this.skeleton.r * slot.r,
-          this.skeleton.g * slot.g,
-          this.skeleton.b * slot.b,
-          this.skeleton.a * slot.a,
-          attachment.uvs[0], attachment.uvs[1],
-          attachment.uvs[4], attachment.uvs[5]
-        );
+
+        context.save();
+        context.globalAlpha = this.alpha;
+        var sourceAngle = attachment.rotation;
+        var xpos = ~~this.skeleton.getRootBone().x, ypos = ~~this.skeleton.getRootBone().y;
+
+        var w = attachment.regionWidth, h = attachment.regionHeight;
+        var angle = this.angle + sourceAngle;
+
+        if ((this.scaleFlag) || (angle!==0)) {
+          // translate to the defined anchor point
+          context.translate(xpos, ypos);
+          // scale
+          if (this.scaleFlag) {
+            context.scale(this.scale.x, this.scale.y);
+          }
+          if (angle!==0) {
+            context.rotate(angle);
+          }
+
+          if (sourceAngle!==0) {
+            // swap w and h for rotated source images
+            w = this.height, h = this.width;
+          }
+        }
+
+        context.drawImage(image,
+                attachment.regionOffsetX, attachment.regionOffsetY,
+                w, h,
+                xpos, ypos,
+                w, h);
+        context.restore();
       }
     },
 
@@ -55,6 +72,16 @@
       this.skeleton = new spine.Skeleton(skeletonData);
       this.stateData = new spine.AnimationStateData(skeletonData); 
       this.state = new spine.AnimationState(this.stateData);
+      for(var i = 0; i < atlas.regions.length; i++) {
+        var region = atlas.regions[i];
+        if(region.name == this.settings['name']) {
+          this.width = region.width;
+          this.height = region.height;
+          this.settings['spritewidth'] = this.width;
+          this.settings['spriteheight'] = this.height;
+        }
+      }
+      
     },
 
     update: function() {
