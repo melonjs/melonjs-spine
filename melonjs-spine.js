@@ -10,12 +10,11 @@
       this.settings = settings;
       this.time = null;
       this.initSpineObjects();
-      console.log(this.settings);
       this.parent(x, y, this.settings);
       this.anchorPoint.x = 0.5;
       this.anchorPoint.y = 0.5;
       
-      this.vertices = [];
+      this.vertices = Array(8);
       this.isRenderable = true;
     },
 
@@ -30,7 +29,7 @@
 
         context.save();
         context.globalAlpha = this.alpha;
-        var sourceAngle = attachment.rotation;
+        /* var sourceAngle = attachment.rotation;
         var xpos = ~~this.skeleton.getRootBone().x, ypos = ~~this.skeleton.getRootBone().y;
 
         var w = attachment.regionWidth, h = attachment.regionHeight;
@@ -57,7 +56,17 @@
                 attachment.regionOffsetX, attachment.regionOffsetY,
                 w, h,
                 xpos, ypos,
-                w, h);
+                w, h); */
+        
+        
+        attachment.computeVertices(skeleton.x, skeleton.y, slot.bone, this.vertices);
+        var w = this.vertices[2]-this.vertices[0], h = this.vertices[3]-this.vertices[1];
+        context.drawImage(image,
+          this.vertices[0], this.vertices[1],
+          w, h,
+          0, 0,
+          w, h
+        );
         context.restore();
       }
     },
