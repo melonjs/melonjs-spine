@@ -3,6 +3,7 @@
   me.Spine = {};
   me.Spine.Entity = me.ObjectEntity.extend({
     init: function(x, y, settings) {
+      this.debugged = false;
       if(isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
         throw "Ensure atlas, imagePath and spineData are specified in the settings hash";
       }
@@ -58,14 +59,23 @@
                 xpos, ypos,
                 w, h); */
         
+        attachment.computeVertices(this.skeleton.x, this.skeleton.y, slot.bone, this.vertices);
+        var dw = (this.vertices[4]+this.skeleton.getRootBone().x)-(this.vertices[0]+this.skeleton.getRootBone().x), dh = (this.vertices[5]+this.skeleton.getRootBone().y)-(this.vertices[1]+this.skeleton.getRootBone().y);
+        var sw = attachment.uvs[4]*image.width-attachment.uvs[0]*image.height, sh = attachment.uvs[5]*image.width-attachment.uvs[1]*image.height;
+        if(!this.debugged) {
+          console.log([image,
+            attachment.uvs[0]*image.width, attachment.uvs[1]*image.height,
+            sw, sh,
+            this.vertices[0]+this.skeleton.getRootBone().x, this.vertices[1]+this.skeleton.getRootBone().y,
+            dw, dh]);
+          this.debugged = true;
+        }
         
-        attachment.computeVertices(skeleton.x, skeleton.y, slot.bone, this.vertices);
-        var w = this.vertices[2]-this.vertices[0], h = this.vertices[3]-this.vertices[1];
         context.drawImage(image,
-          this.vertices[0], this.vertices[1],
-          w, h,
-          0, 0,
-          w, h
+          attachment.uvs[0]*image.width, attachment.uvs[1]*image.height,
+          sw, sh,
+          this.vertices[0]+this.skeleton.getRootBone().x, this.vertices[1]+this.skeleton.getRootBone().y,
+          dw, dh
         );
         context.restore();
       }
