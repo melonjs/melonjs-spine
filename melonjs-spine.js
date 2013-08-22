@@ -4,19 +4,21 @@
   me.Spine.Entity = me.ObjectEntity.extend({
     init: function(x, y, settings) {
       this.debugged = false;
-      if(isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
+      if(typeof settings === 'undefined' || isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
         throw "Ensure atlas, imagePath and spineData are specified in the settings hash";
       }
-      var image = me.loader.getImage(settings['imagePath']);
-      this.settings = settings;
-      this.time = null;
-      this.initSpineObjects();
-      this.parent(x, y, this.settings);
-      this.anchorPoint.x = 0.5;
-      this.anchorPoint.y = 0.5;
-      
-      this.vertices = Array(8);
-      this.isRenderable = true;
+      else {
+        var image = me.loader.getImage(settings['imagePath']);
+        this.settings = settings;
+        this.time = null;
+        this.initSpineObjects();
+        this.parent(x, y, this.settings);
+        this.anchorPoint.x = 0.5;
+        this.anchorPoint.y = 0.5;
+        
+        this.vertices = Array(8);
+        this.isRenderable = true;
+      }
     },
 
     draw: function(context, rect) {
