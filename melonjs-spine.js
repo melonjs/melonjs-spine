@@ -4,21 +4,19 @@
   me.Spine.Entity = me.ObjectEntity.extend({
     init: function(x, y, settings) {
       this.debugged = false;
-      if(typeof settings === 'undefined' || isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
+      if(isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
         throw "Ensure atlas, imagePath and spineData are specified in the settings hash";
       }
-      else {
-        var image = me.loader.getImage(settings['imagePath']);
-        this.settings = settings;
-        this.time = null;
-        this.initSpineObjects();
-        this.parent(x, y, this.settings);
-        this.anchorPoint.x = 0.5;
-        this.anchorPoint.y = 0.5;
-        
-        this.vertices = Array(8);
-        this.isRenderable = true;
-      }
+      var image = me.loader.getImage(settings['imagePath']);
+      this.settings = settings;
+      this.time = me.timer.getTime();
+      this.initSpineObjects(x, y);
+      this.parent(x, y, this.settings);
+      this.anchorPoint.x = 0.5;
+      this.anchorPoint.y = 0.5;
+      
+      this.vertices = Array(8);
+      this.isRenderable = true;
     },
 
     draw: function(context, rect) {
@@ -31,7 +29,7 @@
         var image = attachment.rendererObject.page.rendererObject;
 
         context.save();
-        context.globalAlpha = this.alpha;
+        context.globalAlpha = slot.a;
         /* var sourceAngle = attachment.rotation;
         var xpos = ~~this.skeleton.getRootBone().x, ypos = ~~this.skeleton.getRootBone().y;
 
@@ -62,28 +60,34 @@
                 w, h); */
         
         attachment.computeVertices(this.skeleton.x, this.skeleton.y, slot.bone, this.vertices);
-        var dw = (this.vertices[4]+this.skeleton.getRootBone().x)-(this.vertices[0]+this.skeleton.getRootBone().x), dh = (this.vertices[5]+this.skeleton.getRootBone().y)-(this.vertices[1]+this.skeleton.getRootBone().y);
-        var sw = attachment.uvs[4]*image.width-attachment.uvs[0]*image.height, sh = attachment.uvs[5]*image.width-attachment.uvs[1]*image.height;
+        var sx = attachment.uvs[4]*image.width, sy = attachment.uvs[5]*image.height;
+        var sw = attachment.uvs[0]*image.width - sx, sh = attachment.uvs[1]*image.height - sy;
+        var dx = this.vertices[0]+this.skeleton.getRootBone().x, dy = this.vertices[1]+this.skeleton.getRootBone().y;
+        var dw = (this.vertices[4]+this.skeleton.getRootBone().x)-dx, dh = (this.vertices[5]+this.skeleton.getRootBone().y)-dy;
         if(!this.debugged) {
-          console.log([image,
-            attachment.uvs[0]*image.width, attachment.uvs[1]*image.height,
+          console.log(slot.bone.data.name);
+          console.log(attachment.uvs);
+          console.log(attachment.offset);
+          console.log(this.vertices);
+          console.log(image,
+            sx, sy,
             sw, sh,
-            this.vertices[0]+this.skeleton.getRootBone().x, this.vertices[1]+this.skeleton.getRootBone().y,
-            dw, dh]);
+            dx, dy,
+            dw, dh);
           this.debugged = true;
         }
         
         context.drawImage(image,
-          attachment.uvs[0]*image.width, attachment.uvs[1]*image.height,
+          sx, sy,
           sw, sh,
-          this.vertices[0]+this.skeleton.getRootBone().x, this.vertices[1]+this.skeleton.getRootBone().y,
+          dx, dy,
           dw, dh
         );
         context.restore();
       }
     },
 
-    initSpineObjects: function() {
+    initSpineObjects: function(x, y) {
       var atlasText = me.loader.getTextFile(this.settings['atlas']);
       var loader = new me.Spine.TextureLoader();
       loader.imagePath = this.settings.imagePath;
@@ -91,6 +95,11 @@
       var skeletonJson = new spine.SkeletonJson(new spine.AtlasAttachmentLoader(atlas));
       var skeletonData = skeletonJson.readSkeletonData(me.loader.getJSON(this.settings['spineData']));
       this.skeleton = new spine.Skeleton(skeletonData);
+
+      this.skeleton.getRootBone().x = x;
+      this.skeleton.getRootBone().y = y;
+      this.skeleton.updateWorldTransform();
+
       this.stateData = new spine.AnimationStateData(skeletonData); 
       this.state = new spine.AnimationState(this.stateData);
       for(var i = 0; i < atlas.regions.length; i++) {
@@ -112,6 +121,8 @@
       this.skeleton.updateWorldTransform();
       this.pos.x = this.skeleton.getRootBone().x;
       this.pos.y = this.skeleton.getRootBone().y;
+
+      this.time = me.timer.getTime();
 
       return true;
     }
