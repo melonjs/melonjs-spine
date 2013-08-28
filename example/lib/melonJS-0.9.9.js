@@ -944,7 +944,7 @@ window.me = window.me || {};
 		 * a reference to the game world <br>
 		 * a world is a virtual environment containing all the game objects
 		 * @public
-		 * @type me.EntityContainer
+		 * @type me.ObjectContainer
 		 * @name world
 		 * @memberOf me.game
 		 */
@@ -953,7 +953,7 @@ window.me = window.me || {};
 
 		/**
 		 * when true, all objects will be added under the root world container <br>
-		 * when false, a `me.EntityContainer` object will be created for each corresponding `TMXObjectGroup`
+		 * when false, a `me.ObjectContainer` object will be created for each corresponding `TMXObjectGroup`
 		 * default value : true
 		 * @public
 		 * @type Boolean
@@ -1048,7 +1048,7 @@ window.me = window.me || {};
 				api.viewport = new me.Viewport(0, 0, width, height);
 
 				//the root object of our world is an entity container
-				api.world = new me.EntityContainer(0,0, width, height);
+				api.world = new me.ObjectContainer(0,0, width, height);
 				// give it a name
 				api.world.name = 'rootContainer';
 
@@ -1075,12 +1075,6 @@ window.me = window.me || {};
 		 * @function
 		 */
 		api.reset = function() {
-
-			// initialized the object if not yet done
-			if (!initialized) {
-				api.init();
-			}
-
 			// remove all objects
 			api.removeAll();
 
@@ -1151,7 +1145,7 @@ window.me = window.me || {};
 					// y: Defaults to 0 and can no longer be changed in Tiled Qt.
 					// width: The width of the object group in tiles. Meaningless.
 					// height: The height of the object group in tiles. Meaningless.
-					targetContainer = new me.EntityContainer();
+					targetContainer = new me.ObjectContainer();
 					
 					// set additional properties
 					targetContainer.name = group.name;
@@ -1186,22 +1180,19 @@ window.me = window.me || {};
 
 				// if we created a new container
 				if (api.mergeGroup === false) {
-					
-					// sort everything
-					targetContainer.sort();
+										
+					// add our container to the world
+					api.world.addChild(targetContainer);
 					
 					// re-enable auto-sort
 					targetContainer.autoSort = true;	
 				
-					// add our container to the world
-					api.world.addChild(targetContainer)
 				}
 
 			};
 
-
-			// sort all our stuff !!
-			api.world.sort();
+			// sort everything (recursively)
+			api.world.sort(true);
 			
 			// re-enable auto-sort
 			api.world.autoSort = true;
@@ -1304,7 +1295,7 @@ window.me = window.me || {};
 		 * @memberOf me.game
 		 * @function
 		 * @param {me.ObjectEntity} child
-		 * @return {me.EntityContainer}
+		 * @return {me.ObjectContainer}
 		 */
 		api.getEntityContainer = function(child) {
 			return child.ancestor;
@@ -2436,37 +2427,12 @@ window.me = window.me || {};
 	me.debug = {
 		
 		/**
-		 * enable the FPS counter <br>
-		 * default value : false
-		 * @type Boolean
-		 * @memberOf me.debug
-		 */
-		displayFPS : false,
-
-		/**
-		 * render object Rectangle & Collision Box<br>
-		 * default value : false
-		 * @type Boolean
-		 * @memberOf me.debug
-		 */
-		renderHitBox : false,
-
-		/**
 		 * render Collision Map layer<br>
 		 * default value : false
 		 * @type Boolean
 		 * @memberOf me.debug
 		 */
-		renderCollisionMap : false,
-	
-		/**
-		 * render entities current velocity<br>
-		 * default value : false<br>
-		 * @type Boolean
-		 * @memberOf me.debug
-		 */
-		renderVelocity : false
-		
+		renderCollisionMap : false
 	};
 
 
@@ -2951,11 +2917,6 @@ window.me = window.me || {};
 			
 			// restore the context
 			context.restore();
-				
-			if (me.debug.renderHitBox) {
-				// draw the sprite rectangle
-				this.parent(context, 'green');
-			}
 		},
 
 		/**
@@ -2994,13 +2955,7 @@ window.me = window.me || {};
 	 */
 	me.AnimationSheet = me.SpriteObject.extend(
 	/** @scope me.AnimationSheet.prototype */
-	{
-		/** 
-		 * count the fps and manage animation change
-		 * @ignore
-		 */
-		fpscount : 0,
-		
+	{		
 		// Spacing and margin
 		spacing: 0,
 		margin: 0,
@@ -3015,13 +2970,13 @@ window.me = window.me || {};
 		animationpause : false,
 
 		/**
-		 * animation cycling speed<br>
-		 * default value : me.sys.fps / 10;
+		 * animation cycling speed (delay between frame in ms)<br>
+		 * default value : 100ms;
 		 * @public
 		 * @type Number
 		 * @name me.AnimationSheet#animationspeed
 		 */
-		animationspeed : 0,
+		animationspeed : 100,
 
 		/** @ignore */
 		init : function(x, y, image, spritewidth, spriteheight, spacing, margin, atlas, atlasIndices) {
@@ -3034,8 +2989,8 @@ window.me = window.me || {};
 			// default animation sequence
 			this.current = null;
 						
-			// default animation speed
-			this.animationspeed = me.sys.fps / 10;
+			// default animation speed (ms)
+			this.animationspeed = 100;
 
 			// Spacing and margin
 			this.spacing = spacing || 0;
@@ -3101,7 +3056,7 @@ window.me = window.me || {};
 		 * @function
 		 * @param {String} name animation id
 		 * @param {Int[]|String[]} index list of sprite index or name defining the animaton
-		 * @param {Int} [animationspeed] cycling speed for animation in fps (lower is faster).
+		 * @param {Int} [animationspeed] cycling speed for animation in ms (delay between each frame).
 		 * @see me.AnimationSheet#animationspeed
 		 * @example
 		 * // walking animatin
@@ -3111,7 +3066,7 @@ window.me = window.me || {};
 		 * // rolling animatin
 		 * this.addAnimation ("roll", [7,8,9,10]);
 		 * // slower animation
-		 * this.addAnimation ("roll", [7,8,9,10], 10);
+		 * this.addAnimation ("roll", [7,8,9,10], 200);
 		 */
 		addAnimation : function(name, index, animationspeed) {
 			this.anim[name] = {
@@ -3119,8 +3074,10 @@ window.me = window.me || {};
 				frame : [],
 				idx : 0,
 				length : 0,
-				animationspeed: animationspeed || this.animationspeed
+				animationspeed: animationspeed || this.animationspeed,
+				nextFrame : 0
 			};
+			
 
 			if (index == null) {
 				index = [];
@@ -3183,6 +3140,7 @@ window.me = window.me || {};
 				this.current = this.anim[name];
 				this.resetAnim = resetAnim || null;
 				this.setAnimationFrame(this.current.idx); // or 0 ?
+				this.current.nextFrame = me.timer.getTime() + this.current.animationspeed;
 			} else {
 				throw "melonJS: animation id '" + name + "' not defined";
 			}
@@ -3245,9 +3203,9 @@ window.me = window.me || {};
 		 */
 		update : function() {
 			// update animation if necessary
-			if (!this.animationpause && (this.fpscount++ > this.current.animationspeed)) {
+			if (!this.animationpause && (me.timer.getTime() >= this.current.nextFrame)) {
 				this.setAnimationFrame(++this.current.idx);
-				this.fpscount = 0;
+				
 
 				// switch animation if we reach the end of the strip
 				// and a callback is defined
@@ -3263,6 +3221,10 @@ window.me = window.me || {};
 						return false;
 					}
 				}
+				
+				// set next frame timestamp
+				this.current.nextFrame = me.timer.getTime() + this.current.animationspeed;
+
 				return this.parent() || true;
 			}
 			return this.parent();
@@ -4142,6 +4104,550 @@ window.me = window.me || {};
 
 	});
 
+	/*---------------------------------------------------------*/
+	// END END END
+	/*---------------------------------------------------------*/
+})(window);
+
+/*
+ * MelonJS Game Engine
+ * Copyright (C) 2011 - 2013, Olivier Biot, Jason Oster
+ * http://www.melonjs.org
+ *
+ */
+
+(function(window) {
+
+	/**
+	 * EntityContainer represents a collection of child objects
+	 * @class
+	 * @extends me.Renderable
+	 * @memberOf me
+	 * @constructor
+	 * @param {Number} [x=0] position of the container
+	 * @param {Number} [y=0] position of the container
+	 * @param {Number} [w=me.game.viewport.width] width of the container
+	 * @param {number} [h=me.game.viewport.height] height of the container
+	 */
+
+	me.ObjectContainer = me.Renderable.extend(
+		/** @scope me.ObjectContainer.prototype */ {
+
+		/**
+		 * The property of entity that should be used to sort on <br>
+		 * value : "x", "y", "z" (default: me.game.sortOn)
+		 * @public
+		 * @type String
+		 * @name sortOn
+		 * @memberOf me.ObjectContainer
+		 */
+		sortOn : "z",
+		
+		/** 
+		 * Specify if the entity list should be automatically sorted when adding a new child
+		 * @public
+		 * @type Boolean
+		 * @name autoSort
+		 * @memberOf me.ObjectContainer
+		 */
+		autoSort : true,
+		
+		/** 
+		 * keep track of pending sort
+		 * @ignore
+		 */
+		pendingSort : null,
+		
+		/**
+		 * The array of children of this container.
+		 * @ignore
+		 */	
+		children : null,
+
+		/**
+		 * Enable collision detection for this container (default true)<br>
+		 * @public
+		 * @type Boolean
+		 * @name collidable
+		 * @memberOf me.ObjectContainer
+		 */
+		collidable : true,
+		
+
+		/** 
+		 * constructor
+		 * @ignore
+		 */
+		init : function(x, y, width, height) {
+			// call the parent constructor
+			this.parent(
+				new me.Vector2d(x || 0, y || 0),
+				width || Infinity, 
+				height || Infinity 
+			);
+			this.children = [];
+			// by default reuse the global me.game.setting
+			this.sortOn = me.game.sortOn;
+			this.autoSort = true;
+		},
+
+
+		/**
+		 * Add a child to the container <br>
+		 * if auto-sort is disable, the object will be appended at the bottom of the list
+		 * @name addChild
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 */
+		addChild : function(child) {
+			if(typeof(child.ancestor) !== 'undefined') {
+				child.ancestor.removeChild(child);
+			}
+
+			child.ancestor = this;
+			
+			this.children.push(child);
+			
+			if (this.autoSort === true) {
+				this.sort();
+			}
+		},
+		
+		/**
+		 * Add a child to the container at the specified index<br>
+		 * (the list won't be sorted after insertion)
+		 * @name addChildAt
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 */
+		addChildAt : function(child, index) {
+			if((index >= 0) && (index < this.children.length)) {
+				
+				if(typeof(child.ancestor) !== 'undefined') {
+					child.ancestor.removeChild(child);
+				}
+				
+				child.ancestor = this;
+				
+				this.children.splice(index, 0, child);
+			
+			} else {
+				throw "melonJS (me.ObjectContainer): Index (" + index + ") Out Of Bounds for addChildAt()";
+			}
+		},
+
+		/**
+		 * Swaps the position (z depth) of 2 childs
+		 * @name swapChildren
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 * @param {me.Renderable} child
+		 */
+		swapChildren : function(child, child2) {
+			var index = this.getChildIndex( child );
+			var index2 = this.getChildIndex( child2 );
+			
+			if ((index !== -1) && (index2 !== -1)) {
+				
+				// swap z index
+				var _z = child.z;
+				child.z = child2.z;
+				child2.z = _z;
+				// swap the positions..
+				this.children[index] = child2;
+				this.children[index2] = child;
+				
+			} else {
+				throw "melonJS (me.ObjectContainer): " + child + " Both the supplied entities must be a child of the caller " + this;
+			}
+		},
+
+		/**
+		 * Returns the Child at the specified index
+		 * @name getChildAt
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {Number} index
+		 */
+		getChildAt : function(index) {
+			if((index >= 0) && (index < this.children.length)) {
+				return this.children[index];
+			} else {
+				throw "melonJS (me.ObjectContainer): Index (" + index + ") Out Of Bounds for getChildAt()";
+			}
+		},
+		
+		/**
+		 * Returns the index of the Child
+		 * @name getChildAt
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 */
+		getChildIndex : function(child) {
+			return this.children.indexOf( child );
+		},
+
+		/**
+		 * Returns true if contains the specified Child
+		 * @name hasChild
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {String} value Value of the property
+		 * @return {Boolean}
+		 */
+		hasChild : function(child) {
+			return (this == child.ancestor);
+		},
+		
+		/**
+		 * return the child corresponding to the given property and value.<br>
+		 * note : avoid calling this function every frame since
+		 * it parses the whole object tree each time
+		 * @name getEntityByProp
+		 * @memberOf me.ObjectContainer
+		 * @public
+		 * @function
+		 * @param {String} prop Property name
+		 * @param {String} value Value of the property
+		 * @return {me.Renderable[]} Array of childs
+		 * @example
+		 * // get the first entity called "mainPlayer" in a specific container :
+		 * ent = myContainer.getEntityByProp("name", "mainPlayer");
+		 * // or query the whole world :
+		 * ent = me.game.world.getEntityByProp("name", "mainPlayer");
+		 */
+		getEntityByProp : function(prop, value)	{
+			var objList = [];	
+			// for string comparaisons
+			var _regExp = new RegExp(value, "i");
+			for (var i = this.children.length, obj; i--, obj = this.children[i];) {
+				if (obj instanceof me.ObjectContainer) {
+					objList = objList.concat(obj.getEntityByProp(prop, value));
+				} else if (obj.isEntity) {
+					if (typeof (obj[prop]) === 'string') {
+						if (obj[prop].match(_regExp)) {
+							objList.push(obj);
+						}
+					} else if (obj[prop] == value) {
+						objList.push(obj);
+					}
+				}
+			}
+			return objList;
+		},
+		
+		/**
+		 * Removes (and optionally destroys) a child from the container.<br>
+		 * (removal is immediate and unconditional)<br>
+		 * Never use keepalive=true with objects from {@link me.entityPool}. Doing so will create a memory leak.
+		 * @name removeChild
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 * @param {Boolean} keepalive True to prevent calling child.destroy()
+		 */
+		removeChild : function(child, keepalive) {
+
+			if  (this.hasChild(child)) {
+				
+				child.ancestor = undefined;
+
+				if (!keepalive) {
+					if (typeof (child.destroy) === 'function') {
+						child.destroy();
+					}
+
+					me.entityPool.freeInstance(child);
+				}
+				
+				this.children.splice( this.getChildIndex(child), 1 );
+			
+			} else {
+				throw "melonJS (me.ObjectContainer): " + child + " The supplied entity must be a child of the caller " + this;
+			}
+		},
+		
+		/**
+		 * Move the child in the group one step forward (z depth).
+		 * @name moveUp
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 */
+		moveUp : function(child) {
+			var childIndex = this.getChildIndex(child);
+			if (childIndex -1 >= 0) {
+				// note : we use an inverted loop
+				this.swapChildren(child, this.getChildAt(childIndex-1));
+			}
+		},
+
+		/**
+		 * Move the child in the group one step backward (z depth).
+		 * @name moveDown
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 */
+		moveDown : function(child) {
+			var childIndex = this.getChildIndex(child);
+			if (childIndex+1 < this.children.length) {
+				// note : we use an inverted loop
+				this.swapChildren(child, this.getChildAt(childIndex+1));
+			}
+		},
+
+		/**
+		 * Move the specified child to the top(z depth).
+		 * @name moveToTop
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 */
+		moveToTop : function(child) {
+			var childIndex = this.getChildIndex(child);
+			if (childIndex > 0) {
+				// note : we use an inverted loop
+				this.splice(0, 0, this.splice(childIndex, 1)[0]);
+				// increment our child z value based on the previous child depth
+				child.z = this.children[1].z + 1;
+			}
+		},
+
+		/**
+		 * Move the specified child the bottom (z depth).
+		 * @name moveToBottom
+		 * @memberOf me.ObjectContainer
+		 * @function
+		 * @param {me.Renderable} child
+		 */
+		moveToBottom : function(child) {
+			var childIndex = this.getChildIndex(child);
+			if (childIndex < (this.children.length -1)) {
+				// note : we use an inverted loop
+				this.splice((this.children.length -1), 0, this.splice(childIndex, 1)[0]);
+				// increment our child z value based on the next child depth
+				child.z = this.children[(this.children.length -2)].z - 1;
+			}
+		},
+		
+		/**
+		 * Checks if the specified entity collides with others entities in this container
+		 * @name collideType
+		 * @memberOf me.ObjectContainer
+		 * @public
+		 * @function
+		 * @param {me.Renderable} obj Object to be tested for collision
+		 * @param {Boolean} [multiple=false] check for multiple collision
+		 * @return {me.Vector2d} collision vector or an array of collision vector (multiple collision){@link me.Rect#collideVsAABB}
+		 */
+		collide : function(objA, multiple) {
+			return this.collideType(objA, null, multiple);
+		},
+		
+		/**
+		 * Checks if the specified entity collides with others entities in this container
+		 * @name collideType
+		 * @memberOf me.ObjectContainer
+		 * @public
+		 * @function
+		 * @param {me.Renderable} obj Object to be tested for collision
+		 * @param {String} [type=undefined] Entity type to be tested for collision
+		 * @param {Boolean} [multiple=false] check for multiple collision
+		 * @return {me.Vector2d} collision vector or an array of collision vector (multiple collision){@link me.Rect#collideVsAABB}
+		 */
+		collideType : function(objA, type, multiple) {
+			var res;
+			// make sure we have a boolean
+			multiple = multiple===true ? true : false;
+			if (multiple===true) {
+				var mres = [];
+			} 
+
+			// this should be replace by a list of the 4 adjacent cell around the object requesting collision
+			for ( var i = this.children.length, obj; i--, obj = this.children[i];) {
+			
+				if ( (obj.inViewport || obj.alwaysUpdate ) && obj.collidable ) {
+					
+					// recursivly check through
+					if (obj instanceof me.ObjectContainer) {
+					
+						res = obj.collideType(objA, type, multiple); 
+						if (multiple) {
+							mres.concat(res);
+						} else if (res) {
+							// the child container returned collision information
+							return res;
+						}
+						
+					} else if ( (obj!=objA) && (!type || (obj.type === type)) ) {
+			
+						res = obj.collisionBox.collideVsAABB.call(obj.collisionBox, objA.collisionBox);
+						
+						if (res.x != 0 || res.y != 0) {
+							// notify the object
+							obj.onCollision.call(obj, res, objA);
+							// return the type (deprecated)
+							res.type = obj.type;
+							// return a reference of the colliding object
+							res.obj = obj;
+							// stop here if we don't look for multiple collision detection
+							if (!multiple) {
+								return res;
+							}
+							mres.push(res);
+						}
+					}
+				}
+			}
+			return multiple?mres:null;
+		},
+		
+		/**
+		 * Manually trigger the sort of all the childs in the container</p>
+		 * @name sort
+		 * @memberOf me.ObjectContainer
+		 * @public
+		 * @function
+		 * @param {Boolean} recursive recursively sort all containers if true
+		 */
+		sort : function(recursive) {
+						
+			// do nothing if there is already a pending sort
+			if (this.pendingSort === null) {
+				if (recursive === true) {
+					// trigger other child container sort function (if any)
+					for (var i = this.children.length, obj; i--, obj = this.children[i];) {
+						if (obj instanceof me.ObjectContainer) {
+							// note : this will generate one defered sorting function
+							// for each existing containe
+							obj.sort(recursive);
+						}
+					}
+				}
+				/** @ignore */
+				this.pendingSort = (function (self) {
+					// sort everything in this container
+					self.children.sort(self["_sort"+self.sortOn.toUpperCase()]);
+					// clear the defer id
+					self.pendingSort = null;
+					// make sure we redraw everything
+					me.game.repaint();
+				}).defer(this);
+			};
+		},
+		
+		/**
+		 * Z Sorting function
+		 * @ignore
+		 */
+		_sortZ : function (a,b) {
+			return (b.z) - (a.z);
+		},
+		/**
+		 * X Sorting function
+		 * @ignore
+		 */
+		_sortX : function(a,b) { 
+			/* ? */
+			var result = (b.z - a.z);
+			return (result ? result : ((b.pos && b.pos.x) - (a.pos && a.pos.x)) || 0);
+		},
+		/**
+		 * Y Sorting function
+		 * @ignore
+		 */
+		_sortY : function(a,b) {
+			var result = (b.z - a.z);
+			return (result ? result : ((b.pos && b.pos.y) - (a.pos && a.pos.y)) || 0);
+		},
+		
+		
+		/**
+		 * Destroy function<br>
+		 * @ignore
+		 */
+		destroy : function() {
+			// cancel any sort operation
+			if (this.pendingSort) {
+				clearTimeout(this.pendingSort);
+				this.pendingSort = null;
+			}
+			// delete all children
+			for ( var i = this.children.length, obj; i--, obj = this.children[i];) {
+				// don't remove it if a persistent object
+				if ( !obj.isPersistent ) {
+					this.removeChild(obj);
+				}	
+			}
+		},
+
+		/**
+		 * @ignore
+		 */
+		update : function() {
+			var isDirty = false;
+			var isPaused = me.state.isPaused();
+			
+			for ( var i = this.children.length, obj; i--, obj = this.children[i];) {
+				if (isPaused && (!obj.updateWhenPaused)) {
+					// skip this object
+					continue;
+				}
+	
+				// check if object is visible
+				obj.inViewport = obj.visible && (
+					obj.floating || (obj.getRect && me.game.viewport.isVisible(obj))
+				);
+				
+				// update our object
+				isDirty |= (obj.inViewport || obj.alwaysUpdate) && obj.update();
+			}
+			return isDirty;
+		},
+
+		/**
+		 * @ignore
+		 */
+		draw : function(context, rect) {
+			this.drawCount = 0;			
+			
+			// translate to the container position
+			context.translate(this.pos.x, this.pos.y);
+			
+			for ( var i = this.children.length, obj; i--, obj = this.children[i];) {
+				
+				if ((obj.inViewport || this.floating) && obj.isRenderable) {
+
+					if (obj.floating==true) {
+						context.save();
+						// translate back object
+						context.translate(
+							me.game.viewport.screenX -this.pos.x, 
+							me.game.viewport.screenY -this.pos.y
+						);
+					}
+
+					// draw the object
+					obj.draw(context, rect);
+
+					if (obj.floating==true) {
+						context.restore();
+					}
+
+					this.drawCount++;
+				}
+			}
+			
+			// translate back to origin
+			context.translate(-this.pos.x, -this.pos.y);
+		}
+
+	});
 	/*---------------------------------------------------------*/
 	// END END END
 	/*---------------------------------------------------------*/
@@ -5275,26 +5781,6 @@ window.me = window.me || {};
 				this.renderable.draw(context);
 				context.translate(-x, -y);
 			}
-			// check if debug mode is enabled
-			if (me.debug.renderHitBox && this.collisionBox) {
-				// draw the collisionBox
-				this.collisionBox.draw(context, "red");
-			}
-			if (me.debug.renderVelocity) {
-				// draw entity current velocity
-				var x = ~~(this.pos.x + this.hWidth);
-				var y = ~~(this.pos.y + this.hHeight);
-
-				context.strokeStyle = "blue";
-				context.lineWidth = 1;
-				context.beginPath();
-				context.moveTo(x, y);
-				context.lineTo(
-					x + ~~(this.vel.x * this.hWidth),
-					y + ~~(this.vel.y * this.hHeight)
-				);
-				context.stroke();
-			}
 		},
 		
 		/**
@@ -5421,552 +5907,6 @@ window.me = window.me || {};
 		}
 	});
 
-	/*---------------------------------------------------------*/
-	// END END END
-	/*---------------------------------------------------------*/
-})(window);
-
-/*
- * MelonJS Game Engine
- * Copyright (C) 2011 - 2013, Olivier Biot, Jason Oster
- * http://www.melonjs.org
- *
- */
-
-(function(window) {
-
-	/**
-	 * EntityContainer represents a collection of child objects
-	 * @class
-	 * @extends me.Renderable
-	 * @memberOf me
-	 * @constructor
-	 * @param {Number} [x=0] position of the container
-	 * @param {Number} [y=0] position of the container
-	 * @param {Number} [w=me.game.viewport.width] width of the container
-	 * @param {number} [h=me.game.viewport.height] height of the container
-	 */
-
-	me.EntityContainer = me.Renderable.extend(
-		/** @scope me.EntityContainer.prototype */ {
-
-		/**
-		 * The property of entity that should be used to sort on <br>
-		 * value : "x", "y", "z" (default: me.game.sortOn)
-		 * @public
-		 * @type String
-		 * @name sortOn
-		 * @memberOf me.EntityContainer
-		 */
-		sortOn : "z",
-		
-		/** 
-		 * Specify if the entity list should be automatically sorted when adding a new child
-		 * @public
-		 * @type Boolean
-		 * @name autoSort
-		 * @memberOf me.EntityContainer
-		 */
-		autoSort : true,
-		
-		/** 
-		 * keep track of pending sort
-		 * @ignore
-		 */
-		pendingSort : null,
-
-		/**
-		 * The array of children of this container.
-		 * @ignore
-		 */	
-		children : null,
-
-		/**
-		 * Enable collision detection for this container (default true)<br>
-		 * @public
-		 * @type Boolean
-		 * @name collidable
-		 * @memberOf me.EntityContainer
-		 */
-		collidable : true,
-		
-
-		/** 
-		 * constructor
-		 * @ignore
-		 */
-		init : function(x, y, width, height) {
-			// call the parent constructor
-			this.parent(
-				new me.Vector2d(x || 0, y || 0),
-				width || Infinity, 
-				height || Infinity 
-			);
-			this.children = [];
-			// by default reuse the global me.game.setting
-			this.sortOn = me.game.sortOn;
-			this.autoSort = true;
-
-		},
-
-
-		/**
-		 * Add a child to the container <br>
-		 * if auto-sort is disable, the object will be appended at the bottom of the list
-		 * @name addChild
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 */
-		addChild : function(child) {
-			if(typeof(child.ancestor) !== 'undefined') {
-				child.ancestor.removeChild(child);
-			}
-
-			child.ancestor = this;
-			
-			this.children.push(child);
-			
-			this.sort(this.autoSort===false);
-		},
-		
-		/**
-		 * Add a child to the container at the specified index<br>
-		 * (the list won't be sorted after insertion)
-		 * @name addChildAt
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 */
-		addChildAt : function(child, index) {
-			if((index >= 0) && (index < this.children.length)) {
-				
-				if(typeof(child.ancestor) !== 'undefined') {
-					child.ancestor.removeChild(child);
-				}
-				
-				child.ancestor = this;
-				
-				this.children.splice(index, 0, child);
-			
-			} else {
-				throw "melonJS (me.EntityContainer): Index (" + index + ") Out Of Bounds for addChildAt()";
-			}
-		},
-
-		/**
-		 * Swaps the position (z depth) of 2 childs
-		 * @name swapChildren
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 * @param {me.Renderable} child
-		 */
-		swapChildren : function(child, child2) {
-			var index = this.getChildIndex( child );
-			var index2 = this.getChildIndex( child2 );
-			
-			if ((index !== -1) && (index2 !== -1)) {
-				
-				// swap z index
-				var _z = child.z;
-				child.z = child2.z;
-				child2.z = _z;
-				// swap the positions..
-				this.children[index] = child2;
-				this.children[index2] = child;
-				
-			} else {
-				throw "melonJS (me.EntityContainer): " + child + " Both the supplied entities must be a child of the caller " + this;
-			}
-		},
-
-		/**
-		 * Returns the Child at the specified index
-		 * @name getChildAt
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {Number} index
-		 */
-		getChildAt : function(index) {
-			if((index >= 0) && (index < this.children.length)) {
-				return this.children[index];
-			} else {
-				throw "melonJS (me.EntityContainer): Index (" + index + ") Out Of Bounds for getChildAt()";
-			}
-		},
-		
-		/**
-		 * Returns the index of the Child
-		 * @name getChildAt
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 */
-		getChildIndex : function(child) {
-			return this.children.indexOf( child );
-		},
-
-		/**
-		 * Returns true if contains the specified Child
-		 * @name hasChild
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {String} value Value of the property
-		 * @return {Boolean}
-		 */
-		hasChild : function(child) {
-			return (this == child.ancestor);
-		},
-		
-		/**
-		 * return the child corresponding to the given property and value.<br>
-		 * note : avoid calling this function every frame since
-		 * it parses the whole object tree each time
-		 * @name getEntityByProp
-		 * @memberOf me.EntityContainer
-		 * @public
-		 * @function
-		 * @param {String} prop Property name
-		 * @param {String} value Value of the property
-		 * @return {me.Renderable[]} Array of childs
-		 * @example
-		 * // get the first entity called "mainPlayer" in a specific container :
-		 * ent = myContainer.getEntityByProp("name", "mainPlayer");
-		 * // or query the whole world :
-		 * ent = me.game.world.getEntityByProp("name", "mainPlayer");
-		 */
-		getEntityByProp : function(prop, value)	{
-			var objList = [];	
-			// for string comparaisons
-			var _regExp = new RegExp(value, "i");
-			for (var i = this.children.length, obj; i--, obj = this.children[i];) {
-				if (obj instanceof me.EntityContainer) {
-					objList = objList.concat(obj.getEntityByProp(prop, value));
-				} else if (obj.isEntity) {
-					if (typeof (obj[prop]) === 'string') {
-						if (obj[prop].match(_regExp)) {
-							objList.push(obj);
-						}
-					} else if (obj[prop] == value) {
-						objList.push(obj);
-					}
-				}
-			}
-			return objList;
-		},
-		
-		/**
-		 * Removes (and optionally destroys) a child from the container.<br>
-		 * (removal is immediate and unconditional)<br>
-		 * Never use keepalive=true with objects from {@link me.entityPool}. Doing so will create a memory leak.
-		 * @name removeChild
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 * @param {Boolean} keepalive True to prevent calling child.destroy()
-		 */
-		removeChild : function(child, keepalive) {
-
-			if  (this.hasChild(child)) {
-				
-				child.ancestor = undefined;
-
-				if (!keepalive) {
-					if (typeof (child.destroy) === 'function') {
-						child.destroy();
-					}
-
-					me.entityPool.freeInstance(child);
-				}
-				
-				this.children.splice( this.getChildIndex(child), 1 );
-			
-			} else {
-				throw "melonJS (me.EntityContainer): " + child + " The supplied entity must be a child of the caller " + this;
-			}
-		},
-		
-		/**
-		 * Move the child in the group one step forward (z depth).
-		 * @name moveUp
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 */
-		moveUp : function(child) {
-			var childIndex = this.getChildIndex(child);
-			if (childIndex -1 >= 0) {
-				// note : we use an inverted loop
-				this.swapChildren(child, this.getChildAt(childIndex-1));
-			}
-		},
-
-		/**
-		 * Move the child in the group one step backward (z depth).
-		 * @name moveDown
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 */
-		moveDown : function(child) {
-			var childIndex = this.getChildIndex(child);
-			if (childIndex+1 < this.children.length) {
-				// note : we use an inverted loop
-				this.swapChildren(child, this.getChildAt(childIndex+1));
-			}
-		},
-
-		/**
-		 * Move the specified child to the top(z depth).
-		 * @name moveToTop
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 */
-		moveToTop : function(child) {
-			var childIndex = this.getChildIndex(child);
-			if (childIndex > 0) {
-				// note : we use an inverted loop
-				this.splice(0, 0, this.splice(childIndex, 1)[0]);
-				// increment our child z value based on the previous child depth
-				child.z = this.children[1].z + 1;
-			}
-		},
-
-		/**
-		 * Move the specified child the bottom (z depth).
-		 * @name moveToBottom
-		 * @memberOf me.EntityContainer
-		 * @function
-		 * @param {me.Renderable} child
-		 */
-		moveToBottom : function(child) {
-			var childIndex = this.getChildIndex(child);
-			if (childIndex < (this.children.length -1)) {
-				// note : we use an inverted loop
-				this.splice((this.children.length -1), 0, this.splice(childIndex, 1)[0]);
-				// increment our child z value based on the next child depth
-				child.z = this.children[(this.children.length -2)].z - 1;
-			}
-		},
-		
-		/**
-		 * Checks if the specified entity collides with others entities in this container
-		 * @name collideType
-		 * @memberOf me.EntityContainer
-		 * @public
-		 * @function
-		 * @param {me.Renderable} obj Object to be tested for collision
-		 * @param {Boolean} [multiple=false] check for multiple collision
-		 * @return {me.Vector2d} collision vector or an array of collision vector (multiple collision){@link me.Rect#collideVsAABB}
-		 */
-		collide : function(objA, multiple) {
-			return this.collideType(objA, null, multiple);
-		},
-		
-		/**
-		 * Checks if the specified entity collides with others entities in this container
-		 * @name collideType
-		 * @memberOf me.EntityContainer
-		 * @public
-		 * @function
-		 * @param {me.Renderable} obj Object to be tested for collision
-		 * @param {String} [type=undefined] Entity type to be tested for collision
-		 * @param {Boolean} [multiple=false] check for multiple collision
-		 * @return {me.Vector2d} collision vector or an array of collision vector (multiple collision){@link me.Rect#collideVsAABB}
-		 */
-		collideType : function(objA, type, multiple) {
-			var res;
-			// make sure we have a boolean
-			multiple = multiple===true ? true : false;
-			if (multiple===true) {
-				var mres = [];
-			} 
-
-			// this should be replace by a list of the 4 adjacent cell around the object requesting collision
-			for ( var i = this.children.length, obj; i--, obj = this.children[i];) {
-			
-				if ( (obj.inViewport || obj.alwaysUpdate ) && obj.collidable ) {
-					
-					// recursivly check through
-					if (obj instanceof me.EntityContainer) {
-					
-						res = obj.collideType(objA, type, multiple); 
-						if (multiple) {
-							mres.concat(res);
-						} else if (res) {
-							// the child container returned collision information
-							return res;
-						}
-						
-					} else if ( (obj!=objA) && (!type || (obj.type === type)) ) {
-			
-						res = obj.collisionBox.collideVsAABB.call(obj.collisionBox, objA.collisionBox);
-						
-						if (res.x != 0 || res.y != 0) {
-							// notify the object
-							obj.onCollision.call(obj, res, objA);
-							// return the type (deprecated)
-							res.type = obj.type;
-							// return a reference of the colliding object
-							res.obj = obj;
-							// stop here if we don't look for multiple collision detection
-							if (!multiple) {
-								return res;
-							}
-							mres.push(res);
-						}
-					}
-				}
-			}
-			return multiple?mres:null;
-		},
-		
-		/**
-		 * Manually trigger the sort of all the childs in the container</p>
-		 * @name sort
-		 * @memberOf me.EntityContainer
-		 * @public
-		 * @function
-		 */
-		sort : function(force) {
-			if (force===false && this.autoSort===true) {
-				// don't do anything if not an "internal" call
-				// and if auto-sort is enabled
-				return;
-			}
-						
-			// do nothing if there is already 
-			// a previous pending sort
-			if (this.pendingSort === null) {
-				// trigger other child container sort function (if any)
-				for (var i = this.children.length, obj; i--, obj = this.children[i];) {
-					if (obj instanceof me.EntityContainer) {
-						// note : this will generate one defered sorting function
-						// for each existing containe
-						obj.sort(force);
-					}
-				}
-				/** @ignore */
-				this.pendingSort = (function (self) {
-					// sort everything in this container
-					self.children.sort(self["_sort"+self.sortOn.toUpperCase()]);
-					// clear the defer id
-					self.pendingSort = null;
-					// make sure we redraw everything
-					me.game.repaint();
-				}).defer(this);
-			};
-		},
-		
-		/**
-		 * Z Sorting function
-		 * @ignore
-		 */
-		_sortZ : function (a,b) {
-			return (b.z) - (a.z);
-		},
-		/**
-		 * X Sorting function
-		 * @ignore
-		 */
-		_sortX : function(a,b) { 
-			/* ? */
-			var result = (b.z - a.z);
-			return (result ? result : ((b.pos && b.pos.x) - (a.pos && a.pos.x)) || 0);
-		},
-		/**
-		 * Y Sorting function
-		 * @ignore
-		 */
-		_sortY : function(a,b) {
-			var result = (b.z - a.z);
-			return (result ? result : ((b.pos && b.pos.y) - (a.pos && a.pos.y)) || 0);
-		},
-		
-		
-		/**
-		 * Destroy function<br>
-		 * @ignore
-		 */
-		destroy : function() {
-			// cancel any sort operation
-			if (this.pendingSort) {
-				clearTimeout(this.pendingSort);
-				this.pendingSort = null;
-			}
-			// delete all children
-			for ( var i = this.children.length, obj; i--, obj = this.children[i];) {
-				// don't remove it if a persistent object
-				if ( !obj.isPersistent ) {
-					this.removeChild(obj);
-				}	
-			}
-		},
-
-		/**
-		 * @ignore
-		 */
-		update : function() {
-			var isDirty = false;
-			var isPaused = me.state.isPaused();
-			
-			for ( var i = this.children.length, obj; i--, obj = this.children[i];) {
-				if (isPaused && (!obj.updateWhenPaused)) {
-					// skip this object
-					continue;
-				}
-	
-				// check if object is visible
-				obj.inViewport = obj.visible && (
-					obj.floating || (obj.getRect && me.game.viewport.isVisible(obj))
-				);
-				
-				// update our object
-				isDirty |= (obj.inViewport || obj.alwaysUpdate) && obj.update();
-			}
-			return isDirty;
-		},
-
-		/**
-		 * @ignore
-		 */
-		draw : function(context, rect) {
-			this.drawCount = 0;			
-			
-			// translate to the container position
-			context.translate(this.pos.x, this.pos.y);
-			
-			for ( var i = this.children.length, obj; i--, obj = this.children[i];) {
-				
-				if ((obj.inViewport || this.floating) && obj.isRenderable) {
-
-					if (obj.floating==true) {
-						context.save();
-						// translate back object
-						context.translate(
-							me.game.viewport.screenX -this.pos.x, 
-							me.game.viewport.screenY -this.pos.y
-						);
-					}
-
-					// draw the object
-					obj.draw(context, rect);
-
-					if (obj.floating==true) {
-						context.restore();
-					}
-
-					this.drawCount++;
-				}
-			}
-			
-			// translate back to origin
-			context.translate(-this.pos.x, -this.pos.y);
-		}
-
-	});
 	/*---------------------------------------------------------*/
 	// END END END
 	/*---------------------------------------------------------*/
@@ -7002,8 +6942,6 @@ window.me = window.me || {};
 		var atlasList = {};
 		// contains all the JSON files
 		var jsonList = {};
-		// contains all of the text files
-		var textList = {};
 		// flag to check loading status
 		var resourceCount = 0;
 		var loadCount = 0;
@@ -7051,35 +6989,6 @@ window.me = window.me || {};
 			imgList[img.name].onload = onload;
 			imgList[img.name].onerror = onerror;
 			imgList[img.name].src = img.src + obj.nocache;
-		};
-
-		function preloadText(data, onload, onerror) {
-			var xmlhttp = new XMLHttpRequest();
-			
-			if (xmlhttp.overrideMimeType) {
-				xmlhttp.overrideMimeType('text/plain');
-			}
-			
-			xmlhttp.open("GET", data.src + obj.nocache, true);
-						
-			// set the callbacks
-			xmlhttp.ontimeout = onerror;
-			xmlhttp.onreadystatechange = function() {
-				if (xmlhttp.readyState==4) {
-					// status = 0 when file protocol is used, or cross-domain origin,
-					// (With Chrome use "--allow-file-access-from-files --disable-web-security")
-					if ((xmlhttp.status==200) || ((xmlhttp.status==0) && xmlhttp.responseText)){
-						// get the Texture Packer Atlas content
-						textList[data.name] = xmlhttp.responseText;
-						// fire the callback
-						onload();
-					} else {
-						onerror();
-					}
-				}
-			};
-			// send the request
-			xmlhttp.send(null);
 		};
 
 		/**
@@ -7200,7 +7109,7 @@ window.me = window.me || {};
 			var httpReq = new XMLHttpRequest();
 
 			// load our file
-			httpReq.open("GET", data.src + obj.nocache, false);
+			httpReq.open("GET", data.src + obj.nocache, true);
 			httpReq.responseType = "arraybuffer";
 			httpReq.onerror = onerror;
 			httpReq.onload = function(event){
@@ -7208,11 +7117,10 @@ window.me = window.me || {};
 				if (arrayBuffer) {
 					var byteArray = new Uint8Array(arrayBuffer);
 					var buffer = [];
-					binList[data.name] = new dataType();
 					for (var i = 0; i < byteArray.byteLength; i++) { 
 						buffer[i] = String.fromCharCode(byteArray[i]);
 					}
-					binList[data.name].data = buffer.join("");
+					binList[data.name] = buffer.join("");
 					// callback
 					onload();
 				}
@@ -7331,8 +7239,6 @@ window.me = window.me || {};
 		 *   {name: "ymTrack", type: "binary", src: "data/audio/main.ym"},
 		 *   // JSON file (used for texturePacker) 
 		 *   {name: "texture", type: "json", src: "data/gfx/texture.json"}
-		 *   // Text file
-		 *   {name: "text-data", type: "text", src: "data/list.txt" }
 		 * ];
 		 * ...
 		 *
@@ -7398,9 +7304,7 @@ window.me = window.me || {};
 				case "json":
 					preloadJSON.call(this, res, onload, onerror);
 					return 1;
-				case "text":
-					preloadText.call(this, res, onload, onerror);
-					return 1;
+
 				case "tmx":
 				case "tsx":
 					preloadTMX.call(this, res, onload, onerror);
@@ -7459,13 +7363,6 @@ window.me = window.me || {};
 
 					delete jsonList[res.name];
 					return true;
-
-				case "text":
-					if(!(res.name in textList))
-						return false;
-
-					delete textList[res.name];
-					return true;
 					
 				case "tmx":
 				case "tsx":
@@ -7512,10 +7409,6 @@ window.me = window.me || {};
 
 			// unload all in json resources
 			for (name in jsonList)
-				obj.unload(name);
-
-			// unload all of the text resources
-			for (name in textList)
 				obj.unload(name);
 
 			// unload all audio resources
@@ -7635,25 +7528,6 @@ window.me = window.me || {};
 			elt = elt.toLowerCase();
 			if(elt in jsonList) {
 				return jsonList[elt];
-			}
-			else {
-				return null;
-			}
-		}
-
-		/**
-		 * return the specified Text string
-		 * @name getTextFile
-		 * @memberOf me.loader
-		 * @public
-		 * @function
-		 * @param {String} Name for the text file to load
-		 * @return {Object} 
-		 */
-		obj.getTextFile = function(elt) {
-			elt = elt.toLowerCase();
-			if(elt in textList) {
-				return textList[elt];
 			}
 			else {
 				return null;
@@ -8796,8 +8670,6 @@ window.me = window.me || {};
 			---------------------------------------------*/
 
 		//hold element to display fps
-		var htmlCounter = null;
-		var debug = false;
 		var framecount = 0;
 		var framedelta = 0;
 
@@ -8809,15 +8681,6 @@ window.me = window.me || {};
 		// define some step with some margin
 		var minstep = (1000 / me.sys.fps) * 1.25; // IS IT NECESSARY?
 
-		/**
-		 * draw the fps counter
-		 * @ignore
-		 */
-		function draw(fps) {
-			htmlCounter.replaceChild(document.createTextNode("(" + fps + "/"
-					+ me.sys.fps + " fps)"), htmlCounter.firstChild);
-		};
-		
 
 		/*---------------------------------------------
 			
@@ -8848,12 +8711,6 @@ window.me = window.me || {};
 		 * @ignore
 		 */
 		api.init = function() {
-			// check if we have a fps counter display in the HTML
-			htmlCounter = document.getElementById("framecounter");
-			if (htmlCounter !== null) {
-				me.debug.displayFPS = true;
-			}
-
 			// reset variables to initial state
 			api.reset();
 		};
@@ -8875,14 +8732,32 @@ window.me = window.me || {};
 		};
 
 		/**
-		 * return the current time
+		 * Return the current time, in milliseconds elapsed between midnight, January 1, 1970, and the current date and time.
 		 * @name getTime
 		 * @memberOf me.timer
-		 * @return {Date}
+		 * @return {Number}
 		 * @function
 		 */
 		api.getTime = function() {
 			return now;
+		};
+
+
+		/**
+		 * compute the actual frame time and fps rate
+		 * @name computeFPS
+		 * @ignore
+		 * @memberOf me.timer
+		 * @function
+		 */
+		api.countFPS = function() {
+			framecount++;
+			framedelta += delta;
+			if (framecount % 10 == 0) {
+				this.fps = (~~((1000 * framecount) / framedelta)).clamp(0, me.sys.fps);
+				framedelta = 0;
+				framecount = 0;
+			}
 		};
 
 		/**
@@ -8896,20 +8771,6 @@ window.me = window.me || {};
 
 			delta = (now - last);
 
-			// only draw the FPS on in the HTML page 
-			if (me.debug.displayFPS) {
-				framecount++;
-				framedelta += delta;
-				if (framecount % 10 == 0) {
-					this.fps = (~~((1000 * framecount) / framedelta)).clamp(0, me.sys.fps);
-					framedelta = 0;
-					framecount = 0;
-				}
-				// set the element in the HTML
-				if (htmlCounter !== null) {
-					draw(this.fps);
-				}
-			}
 			// get the game tick
 			api.tick = (delta > minstep && me.sys.interpolation) ? delta / step	: 1;
 		};
@@ -9065,6 +8926,8 @@ window.me = window.me || {};
 			
 			// trigger an initial resize();
 			me.video.onresize(null);
+
+			me.game.init();
 			
 			return true;
 		};
@@ -10006,6 +9869,7 @@ window.me = window.me || {};
 			'RIGHT' : 39,
 			'DOWN' : 40,
 			'ENTER' : 13,
+			'TAB' : 9,
 			'SHIFT' : 16,
 			'CTRL' : 17,
 			'ALT' : 18,
@@ -11169,8 +11033,8 @@ window.me = window.me || {};
 	/**
 	 * TMX Object Group <br>
 	 * contains the object group definition as defined in Tiled. <br>
-	 * note : object group definition is translated into the virtual `me.game.world` using `me.EntityContainer`.
-	 * @see me.EntityContainer
+	 * note : object group definition is translated into the virtual `me.game.world` using `me.ObjectContainer`.
+	 * @see me.ObjectContainer
 	 * @class
 	 * @extends Object
 	 * @memberOf me
@@ -14147,30 +14011,21 @@ window.me = window.me || {};
  * @preserve Tween JS
  * https://github.com/sole/Tween.js
  */
-/**
- * author sole / http://soledadpenades.com
- * author mr.doob / http://mrdoob.com
- * author Robert Eisele / http://www.xarg.org
- * author Philippe / http://philippe.elsass.me
- * author Robert Penner / http://www.robertpenner.com/easing_terms_of_use.html
- * author Paul Lewis / http://www.aerotwist.com/
- * author lechecacharro
- * author Josh Faul / http://jocafa.com/
- */
 
 (function() {
+
 	/**
 	 * Javascript Tweening Engine<p>
 	 * Super simple, fast and easy to use tweening engine which incorporates optimised Robert Penner's equation<p>
 	 * <a href="https://github.com/sole/Tween.js">https://github.com/sole/Tween.js</a><p>
-	 * @author {@link http://soledadpenades.com|sole}
-	 * @author {@link http://mrdoob.com|mr.doob}
-	 * @author {@link http://www.xarg.org|Robert Eisele}
-	 * @author {@link http://philippe.elsass.me|Philippe}
-	 * @author {@link http://www.robertpenner.com/easing_terms_of_use.html|Robert Penner}
-	 * @author {@link http://www.aerotwist.com/|Paul Lewis}
-	 * @author lechecacharro
-	 * @author {@link http://jocafa.com/|Josh Faul}
+	 * author sole / http://soledadpenades.com<br>
+	 * author mr.doob / http://mrdoob.com<br>
+	 * author Robert Eisele / http://www.xarg.org<br>
+	 * author Philippe / http://philippe.elsass.me<br>
+	 * author Robert Penner / http://www.robertpenner.com/easing_terms_of_use.html<br>
+	 * author Paul Lewis / http://www.aerotwist.com/<br>
+	 * author lechecacharro<br>
+	 * author Josh Faul / http://jocafa.com/
 	 * @class
 	 * @memberOf me
 	 * @constructor
@@ -14178,30 +14033,43 @@ window.me = window.me || {};
 	 * @example
 	 * // add a tween to change the object pos.y variable to 200 in 3 seconds
 	 * tween = new me.Tween(myObject.pos).to({y: 200}, 3000).onComplete(myFunc);
-	 * tween.easing(me.Tween.Easing.Bounce.EaseOut);
+	 * tween.easing(me.Tween.Easing.Bounce.Out);
 	 * tween.start();
 	 */
-	me.Tween = function(object) {
+	me.Tween = function ( object ) {
 
-		var _object = object,
-			_valuesStart = {},
-			_valuesDelta = {},
-			_valuesEnd = {},
-			_duration = 1000,
-			_delayTime = 0,
-			_startTime = null,
-			_pauseTime = 0,
-			_easingFunction = me.Tween.Easing.Linear.EaseNone,
-			_chainedTween = null,
-			_onUpdateCallback = null,
-			_onCompleteCallback = null;
-
+		var _object = object;
+		var _valuesStart = {};
+		var _valuesEnd = {};
+		var _valuesStartRepeat = {};
+		var _duration = 1000;
+		var _repeat = 0;
+		var _yoyo = false;
+		var _reversed = false;
+		var _delayTime = 0;
+		var _startTime = null;
+		var _easingFunction = me.Tween.Easing.Linear.None;
+		var _interpolationFunction = me.Tween.Interpolation.Linear;
+		var _chainedTweens = [];
+		var _onStartCallback = null;
+		var _onStartCallbackFired = false;
+		var _onUpdateCallback = null;
+		var _onCompleteCallback = null;
+		
 		/**
 		 * Always update the tween (it's never in viewport)
 		 * @ignore
 		 */
 		this.alwaysUpdate = true;
 
+		// Set all starting values present on the target object
+		for ( var field in object ) {
+
+			_valuesStart[ field ] = parseFloat(object[field], 10);
+
+		}
+
+		
 		/**
 		 * object properties to be updated and duration
 		 * @name me.Tween#to
@@ -14210,28 +14078,15 @@ window.me = window.me || {};
 		 * @param {Properties} prop list of properties
 		 * @param {int} duration tween duration
 		 */
-		this.to = function(properties, duration) {
+		this.to = function ( properties, duration ) {
 
-			if (duration !== undefined) {
+			if ( duration !== undefined ) {
 
 				_duration = duration;
 
 			}
 
-			for ( var property in properties) {
-
-				// This prevents the engine from interpolating null values
-				if (_object[property] === null) {
-
-					continue;
-
-				}
-
-				// The current values are read when the Tween starts;
-				// here we only store the final desired values
-				_valuesEnd[property] = properties[property];
-
-			}
+			_valuesEnd = properties;
 
 			return this;
 
@@ -14243,30 +14098,44 @@ window.me = window.me || {};
 		 * @public
 		 * @function
 		 */
-		this.start = function() {
+		this.start = function ( time ) {
+
+			_onStartCallbackFired = false;
 
 			// add the tween to the object pool on start
 			me.game.add(this, 999);
 
 			_startTime = me.timer.getTime() + _delayTime;
 			_pauseTime = 0;
+		
+			for ( var property in _valuesEnd ) {
 
-			for ( var property in _valuesEnd) {
+				// check if an Array was provided as property value
+				if ( _valuesEnd[ property ] instanceof Array ) {
 
-				// Again, prevent dealing with null values
-				if (_object[property] === null) {
+					if ( _valuesEnd[ property ].length === 0 ) {
 
-					continue;
+						continue;
+
+					}
+
+					// create a local copy of the Array with the start value at the front
+					_valuesEnd[ property ] = [ _object[ property ] ].concat( _valuesEnd[ property ] );
 
 				}
 
-				_valuesStart[property] = _object[property];
-				_valuesDelta[property] = _valuesEnd[property]
-						- _object[property];
+				_valuesStart[ property ] = _object[ property ];
+
+				if( ( _valuesStart[ property ] instanceof Array ) === false ) {
+					_valuesStart[ property ] *= 1.0; // Ensures we're using numbers, not strings
+				}
+
+				_valuesStartRepeat[ property ] = _valuesStart[ property ] || 0;
 
 			}
 
 			return this;
+
 		};
 
 		/**
@@ -14275,7 +14144,7 @@ window.me = window.me || {};
 		 * @public
 		 * @function
 		 */
-		this.stop = function() {
+		this.stop = function () {
 
 			me.game.remove(this, true);
 			return this;
@@ -14289,13 +14158,13 @@ window.me = window.me || {};
 		 * @function
 		 * @param {int} amount delay amount expressed in milliseconds
 		 */
-		this.delay = function(amount) {
+		this.delay = function ( amount ) {
 
 			_delayTime = amount;
 			return this;
 
 		};
-
+		
 		/**
 		 * Calculate delta to pause the tween
 		 * @ignore
@@ -14317,15 +14186,59 @@ window.me = window.me || {};
 		});
 
 		/**
+		 * Repeat the tween 
+		 * @name me.Tween#repeat
+		 * @public
+		 * @function
+		 * @param {int} times amount of times the tween should be repeated
+		 */
+		this.repeat = function ( times ) {
+
+			_repeat = times;
+			return this;
+
+		};
+		
+		/**
+		 * allows the tween to bounce back to their original value when finished
+		 * @name me.Tween#yoyo
+		 * @public
+		 * @function
+		 * @param {Boolean} yoyo
+		 */
+		this.yoyo = function( yoyo ) {
+
+			_yoyo = yoyo;
+			return this;
+
+		};
+
+		/**
 		 * set the easing function
 		 * @name me.Tween#easing
 		 * @public
 		 * @function
 		 * @param {me.Tween#Easing} easing easing function
 		 */
-		this.easing = function(easing) {
-
+		this.easing = function ( easing ) {
+			if (typeof easing !== 'function') {
+				throw "melonJS: invalid easing function for me.Tween.easing()";
+			}
 			_easingFunction = easing;
+			return this;
+
+		};
+
+		/**
+		 * set the interpolation function
+		 * @name me.Tween#interpolation
+		 * @public
+		 * @function
+		 * @param {me.Tween#Interpolation} easing easing function
+		 */
+		this.interpolation = function ( interpolation ) {
+
+			_interpolationFunction = interpolation;
 			return this;
 
 		};
@@ -14337,9 +14250,23 @@ window.me = window.me || {};
 		 * @function
 		 * @param {me.Tween} chainedTween Tween to be chained
 		 */
-		this.chain = function(chainedTween) {
+		this.chain = function () {
 
-			_chainedTween = chainedTween;
+			_chainedTweens = arguments;
+			return this;
+
+		};
+
+		/**
+		 * onStart callback
+		 * @name me.Tween#onStart
+		 * @public
+		 * @function
+		 * @param {Function} onStartCallback callback
+		 */
+		this.onStart = function ( callback ) {
+
+			_onStartCallback = callback;
 			return this;
 
 		};
@@ -14351,9 +14278,9 @@ window.me = window.me || {};
 		 * @function
 		 * @param {Function} onUpdateCallback callback
 		 */
-		this.onUpdate = function(onUpdateCallback) {
+		this.onUpdate = function ( callback ) {
 
-			_onUpdateCallback = onUpdateCallback;
+			_onUpdateCallback = callback;
 			return this;
 
 		};
@@ -14365,64 +14292,123 @@ window.me = window.me || {};
 		 * @function
 		 * @param {Function} onCompleteCallback callback
 		 */
-		this.onComplete = function(onCompleteCallback) {
+		this.onComplete = function ( callback ) {
 
-			_onCompleteCallback = onCompleteCallback;
+			_onCompleteCallback = callback;
 			return this;
 
 		};
-
+		
 		/** @ignore*/
-		this.update = function(/* time */) {
+		this.update = function ( /*time*/ ) {
 
-			var property, elapsed, value;
-
+			var property;
+			
 			var time = me.timer.getTime();
 
-			if (time < _startTime) {
+			if ( time < _startTime ) {
 
 				return true;
 
 			}
 
-			if ( ( elapsed = ( time - _startTime ) / _duration ) >= 1) {
-			
-					elapsed = 1;
-			}
+			if ( _onStartCallbackFired === false ) {
 
-			value = _easingFunction(elapsed);
+				if ( _onStartCallback !== null ) {
 
-			for (property in _valuesDelta) {
-
-				_object[property] = _valuesStart[property]
-						+ _valuesDelta[property] * value;
-
-			}
-
-			if (_onUpdateCallback !== null) {
-
-				_onUpdateCallback.call(_object, value);
-
-			}
-
-			if (elapsed === 1) {
-
-				// remove the tween from the object pool
-				me.game.remove(this, true);
-
-				if (_onCompleteCallback !== null) {
-
-					_onCompleteCallback.call(_object);
+					_onStartCallback.call( _object );
 
 				}
 
-				if (_chainedTween !== null) {
+				_onStartCallbackFired = true;
 
-					_chainedTween.start();
+			}
+
+			var elapsed = ( time - _startTime ) / _duration;
+			elapsed = elapsed > 1 ? 1 : elapsed;
+
+			var value = _easingFunction( elapsed );
+
+			for ( property in _valuesEnd ) {
+
+				var start = _valuesStart[ property ] || 0;
+				var end = _valuesEnd[ property ];
+
+				if ( end instanceof Array ) {
+
+					_object[ property ] = _interpolationFunction( end, value );
+
+				} else {
+
+					// Parses relative end values with start as base (e.g.: +10, -3)
+					if ( typeof(end) === "string" ) {
+						end = start + parseFloat(end, 10);
+					}
+
+					// protect against non numeric properties.
+					if ( typeof(end) === "number" ) {
+						_object[ property ] = start + ( end - start ) * value;
+					}
 
 				}
 
-				return false;
+			}
+
+			if ( _onUpdateCallback !== null ) {
+
+				_onUpdateCallback.call( _object, value );
+
+			}
+
+			if ( elapsed == 1 ) {
+
+				if ( _repeat > 0 ) {
+
+					if( isFinite( _repeat ) ) {
+						_repeat--;
+					}
+
+					// reassign starting values, restart by making startTime = now
+					for( property in _valuesStartRepeat ) {
+
+						if ( typeof( _valuesEnd[ property ] ) === "string" ) {
+							_valuesStartRepeat[ property ] = _valuesStartRepeat[ property ] + parseFloat(_valuesEnd[ property ], 10);
+						}
+
+						if (_yoyo) {
+							var tmp = _valuesStartRepeat[ property ];
+							_valuesStartRepeat[ property ] = _valuesEnd[ property ];
+							_valuesEnd[ property ] = tmp;
+							_reversed = !_reversed;
+						}
+						_valuesStart[ property ] = _valuesStartRepeat[ property ];
+
+					}
+
+					_startTime = time + _delayTime;
+
+					return true;
+
+				} else {
+				
+					// remove the tween from the object pool
+					me.game.remove(this, true);
+
+					if ( _onCompleteCallback !== null ) {
+
+						_onCompleteCallback.call( _object );
+
+					}
+
+					for ( var i = 0, numChainedTweens = _chainedTweens.length; i < numChainedTweens; i ++ ) {
+
+						_chainedTweens[ i ].start( time );
+
+					}
+
+					return false;
+
+				}
 
 			}
 
@@ -14430,42 +14416,42 @@ window.me = window.me || {};
 
 		};
 
-	}
+	};
 
 	/**
 	 * Easing Function :<br>
 	 * <p>
-	 * Easing.Linear.EaseNone<br>
-	 * Easing.Quadratic.EaseIn<br>
-	 * Easing.Quadratic.EaseOut<br>
-	 * Easing.Quadratic.EaseInOut<br>
-	 * Easing.Cubic.EaseIn<br>
-	 * Easing.Cubic.EaseOut<br>
-	 * Easing.Cubic.EaseInOut<br>
-	 * Easing.Quartic.EaseIn<br>
-	 * Easing.Quartic.EaseOut<br>
-	 * Easing.Quartic.EaseInOut<br>
-	 * Easing.Quintic.EaseIn<br>
-	 * Easing.Quintic.EaseOut<br>
-	 * Easing.Quintic.EaseInOut<br>
-	 * Easing.Sinusoidal.EaseIn<br>
-	 * Easing.Sinusoidal.EaseOut<br>
-	 * Easing.Sinusoidal.EaseInOut<br>
-	 * Easing.Exponential.EaseIn<br>
-	 * Easing.Exponential.EaseOut<br>
-	 * Easing.Exponential.EaseInOut<br>
-	 * Easing.Circular.EaseIn<br>
-	 * Easing.Circular.EaseOut<br>
-	 * Easing.Circular.EaseInOut<br>
-	 * Easing.Elastic.EaseIn<br>
-	 * Easing.Elastic.EaseOut<br>
-	 * Easing.Elastic.EaseInOut<br>
-	 * Easing.Back.EaseIn<br>
-	 * Easing.Back.EaseOut<br>
-	 * Easing.Back.EaseInOut<br>
-	 * Easing.Bounce.EaseIn<br>
-	 * Easing.Bounce.EaseOut<br>
-	 * Easing.Bounce.EaseInOut
+	 * me.Tween.Easing.Linear.None<br>
+	 * me.Tween.Easing.Quadratic.In<br>
+	 * me.Tween.Easing.Quadratic.Out<br>
+	 * me.Tween.Easing.Quadratic.InOut<br>
+	 * me.Tween.Easing.Cubic.In<br>
+	 * me.Tween.Easing.Cubic.Out<br>
+	 * me.Tween.Easing.Cubic.InOut<br>
+	 * me.Tween.Easing.Quartic.In<br>
+	 * me.Tween.Easing.Quartic.Out<br>
+	 * me.Tween.Easing.Quartic.InOut<br>
+	 * me.Tween.Easing.Quintic.In<br>
+	 * me.Tween.Easing.Quintic.Out<br>
+	 * me.Tween.Easing.Quintic.InOut<br>
+	 * me.Tween.Easing.Sinusoidal.In<br>
+	 * me.Tween.Easing.Sinusoidal.Out<br>
+	 * me.Tween.Easing.Sinusoidal.InOut<br>
+	 * me.Tween.Easing.Exponential.In<br>
+	 * me.Tween.Easing.Exponential.Out<br>
+	 * me.Tween.Easing.Exponential.InOut<br>
+	 * me.Tween.Easing.Circular.In<br>
+	 * me.Tween.Easing.Circular.Out<br>
+	 * me.Tween.Easing.Circular.InOut<br>
+	 * me.Tween.Easing.Elastic.In<br>
+	 * me.Tween.Easing.Elastic.Out<br>
+	 * me.Tween.Easing.Elastic.InOut<br>
+	 * me.Tween.Easing.Back.In<br>
+	 * me.Tween.Easing.Back.Out<br>
+	 * me.Tween.Easing.Back.InOut<br>
+	 * me.Tween.Easing.Bounce.In<br>
+	 * me.Tween.Easing.Bounce.Out<br>
+	 * me.Tween.Easing.Bounce.InOut
 	 * </p>
 	 * @public
 	 * @constant
@@ -14473,262 +14459,382 @@ window.me = window.me || {};
 	 * @name me.Tween#Easing
 	 */
 	me.Tween.Easing = {
-		Linear : {},
-		Quadratic : {},
-		Cubic : {},
-		Quartic : {},
-		Quintic : {},
-		Sinusoidal : {},
-		Exponential : {},
-		Circular : {},
-		Elastic : {},
-		Back : {},
-		Bounce : {}
-	};
 
-	/** @ignore */
-	me.Tween.Easing.Linear.EaseNone = function(k) {
+		Linear: {
+			/** @ignore */
+			None: function ( k ) {
 
-		return k;
+				return k;
 
-	};
+			}
 
-	/** @ignore */
-	me.Tween.Easing.Quadratic.EaseIn = function(k) {
+		},
 
-		return k * k;
+		Quadratic: {
+			/** @ignore */
+			In: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Quadratic.EaseOut = function(k) {
+				return k * k;
 
-		return k * ( 2 - k );
+			},
+			/** @ignore */
+			Out: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Quadratic.EaseInOut = function(k) {
+				return k * ( 2 - k );
 
-		if ((k *= 2) < 1)
-			return 0.5 * k * k;
-		return -0.5 * (--k * (k - 2) - 1);
+			},
+			/** @ignore */
+			InOut: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Cubic.EaseIn = function(k) {
+				if ( ( k *= 2 ) < 1 ) return 0.5 * k * k;
+				return - 0.5 * ( --k * ( k - 2 ) - 1 );
 
-		return k * k * k;
+			}
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Cubic.EaseOut = function(k) {
+		},
 
-		return --k * k * k + 1;
+		Cubic: {
+			/** @ignore */
+			In: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Cubic.EaseInOut = function(k) {
+				return k * k * k;
 
-		if ((k *= 2) < 1)
-			return 0.5 * k * k * k;
-		return 0.5 * ((k -= 2) * k * k + 2);
+			},
+			/** @ignore */
+			Out: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Quartic.EaseIn = function(k) {
+				return --k * k * k + 1;
 
-		return k * k * k * k;
+			},
+			/** @ignore */
+			InOut: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Quartic.EaseOut = function(k) {
+				if ( ( k *= 2 ) < 1 ) return 0.5 * k * k * k;
+				return 0.5 * ( ( k -= 2 ) * k * k + 2 );
 
-		return 1 - (--k * k * k * k);
+			}
 
-	}
-	/** @ignore */
-	me.Tween.Easing.Quartic.EaseInOut = function(k) {
+		},
 
-		if ((k *= 2) < 1)
-			return 0.5 * k * k * k * k;
-		return -0.5 * ((k -= 2) * k * k * k - 2);
+		Quartic: {
+			/** @ignore */
+			In: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Quintic.EaseIn = function(k) {
+				return k * k * k * k;
 
-		return k * k * k * k * k;
+			},
+			/** @ignore */
+			Out: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Quintic.EaseOut = function(k) {
+				return 1 - ( --k * k * k * k );
 
-		return --k * k * k * k * k + 1;
+			},
+			/** @ignore */
+			InOut: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Quintic.EaseInOut = function(k) {
+				if ( ( k *= 2 ) < 1) return 0.5 * k * k * k * k;
+				return - 0.5 * ( ( k -= 2 ) * k * k * k - 2 );
 
-		if ((k *= 2) < 1)
-			return 0.5 * k * k * k * k * k;
-		return 0.5 * ((k -= 2) * k * k * k * k + 2);
+			}
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Sinusoidal.EaseIn = function(k) {
+		},
 
-		return 1 - Math.cos( k * Math.PI / 2 );
+		Quintic: {
+			/** @ignore */
+			In: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Sinusoidal.EaseOut = function(k) {
+				return k * k * k * k * k;
 
-		return Math.sin(k * Math.PI / 2);
+			},
+			/** @ignore */
+			Out: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Sinusoidal.EaseInOut = function(k) {
+				return --k * k * k * k * k + 1;
 
-		return 0.5 * ( 1 - Math.cos( Math.PI * k ) );
+			},
+			/** @ignore */
+			InOut: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Exponential.EaseIn = function(k) {
+				if ( ( k *= 2 ) < 1 ) return 0.5 * k * k * k * k * k;
+				return 0.5 * ( ( k -= 2 ) * k * k * k * k + 2 );
 
-		return k === 0 ? 0 : Math.pow( 1024, k - 1 );
+			}
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Exponential.EaseOut = function(k) {
+		},
 
-		return k === 1 ? 1 : 1 - Math.pow( 2, - 10 * k );
+		Sinusoidal: {
+			/** @ignore */
+			In: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Exponential.EaseInOut = function(k) {
+				return 1 - Math.cos( k * Math.PI / 2 );
 
-		if ( k === 0 ) return 0;
-		if ( k === 1 ) return 1;
-		if ( ( k *= 2 ) < 1 ) return 0.5 * Math.pow( 1024, k - 1 );
-		return 0.5 * (-Math.pow(2, -10 * (k - 1)) + 2);
+			},
+			/** @ignore */
+			Out: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Circular.EaseIn = function(k) {
+				return Math.sin( k * Math.PI / 2 );
 
-		return 1 - Math.sqrt( 1 - k * k );
+			},
+			/** @ignore */
+			InOut: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Circular.EaseOut = function(k) {
+				return 0.5 * ( 1 - Math.cos( Math.PI * k ) );
 
-		return Math.sqrt(1 - (--k * k));
+			}
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Circular.EaseInOut = function(k) {
+		},
 
-		if ( ( k *= 2 ) < 1) return - 0.5 * ( Math.sqrt( 1 - k * k) - 1);
-		return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
+		Exponential: {
+			/** @ignore */
+			In: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Elastic.EaseIn = function(k) {
+				return k === 0 ? 0 : Math.pow( 1024, k - 1 );
 
-		var s, a = 0.1, p = 0.4;
-		if ( k === 0 ) return 0;
-		if ( k === 1 ) return 1;
-		if ( !a || a < 1 ) { a = 1; s = p / 4; }
-		else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
-		return - ( a * Math.pow( 2, 10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) );
+			},
+			/** @ignore */
+			Out: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Elastic.EaseOut = function(k) {
+				return k === 1 ? 1 : 1 - Math.pow( 2, - 10 * k );
 
-		var s, a = 0.1, p = 0.4;
-		if ( k === 0 ) return 0;
-		if ( k === 1 ) return 1;
-		if ( !a || a < 1 ) { a = 1; s = p / 4; }
-		else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
-		return ( a * Math.pow( 2, - 10 * k) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) + 1 );
+			},
+			/** @ignore */
+			InOut: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Elastic.EaseInOut = function(k) {
+				if ( k === 0 ) return 0;
+				if ( k === 1 ) return 1;
+				if ( ( k *= 2 ) < 1 ) return 0.5 * Math.pow( 1024, k - 1 );
+				return 0.5 * ( - Math.pow( 2, - 10 * ( k - 1 ) ) + 2 );
 
-		var s, a = 0.1, p = 0.4;
-		if ( k === 0 ) return 0;
-		if ( k === 1 ) return 1;
-		if ( !a || a < 1 ) { a = 1; s = p / 4; }
-		else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
-		if ( ( k *= 2 ) < 1 ) return - 0.5 * ( a * Math.pow( 2, 10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) );
-		return a * Math.pow( 2, -10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) * 0.5 + 1;
+			}
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Back.EaseIn = function(k) {
+		},
 
-		var s = 1.70158;
-		return k * k * ((s + 1) * k - s);
+		Circular: {
+			/** @ignore */
+			In: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Back.EaseOut = function(k) {
+				return 1 - Math.sqrt( 1 - k * k );
 
-		var s = 1.70158;
-		return --k * k * ( ( s + 1 ) * k + s ) + 1;
+			},
+			/** @ignore */
+			Out: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Back.EaseInOut = function(k) {
+				return Math.sqrt( 1 - ( --k * k ) );
 
-		var s = 1.70158 * 1.525;
-		if ((k *= 2) < 1)
-			return 0.5 * (k * k * ((s + 1) * k - s));
-		return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
+			},
+			/** @ignore */
+			InOut: function ( k ) {
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Bounce.EaseIn = function(k) {
+				if ( ( k *= 2 ) < 1) return - 0.5 * ( Math.sqrt( 1 - k * k) - 1);
+				return 0.5 * ( Math.sqrt( 1 - ( k -= 2) * k) + 1);
 
-		return 1 - me.Tween.Easing.Bounce.EaseOut(1 - k);
+			}
 
-	};
-	/** @ignore */
-	me.Tween.Easing.Bounce.EaseOut = function(k) {
+		},
 
-		if ( k < ( 1 / 2.75 ) ) {
+		Elastic: {
+			/** @ignore */
+			In: function ( k ) {
 
-			return 7.5625 * k * k;
+				var s, a = 0.1, p = 0.4;
+				if ( k === 0 ) return 0;
+				if ( k === 1 ) return 1;
+				if ( !a || a < 1 ) { a = 1; s = p / 4; }
+				else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
+				return - ( a * Math.pow( 2, 10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) );
 
-		} else if (k < (2 / 2.75)) {
+			},
+			/** @ignore */
+			Out: function ( k ) {
 
-			return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
+				var s, a = 0.1, p = 0.4;
+				if ( k === 0 ) return 0;
+				if ( k === 1 ) return 1;
+				if ( !a || a < 1 ) { a = 1; s = p / 4; }
+				else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
+				return ( a * Math.pow( 2, - 10 * k) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) + 1 );
 
-		} else if (k < (2.5 / 2.75)) {
+			},
+			/** @ignore */
+			InOut: function ( k ) {
 
-			return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
+				var s, a = 0.1, p = 0.4;
+				if ( k === 0 ) return 0;
+				if ( k === 1 ) return 1;
+				if ( !a || a < 1 ) { a = 1; s = p / 4; }
+				else s = p * Math.asin( 1 / a ) / ( 2 * Math.PI );
+				if ( ( k *= 2 ) < 1 ) return - 0.5 * ( a * Math.pow( 2, 10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) );
+				return a * Math.pow( 2, -10 * ( k -= 1 ) ) * Math.sin( ( k - s ) * ( 2 * Math.PI ) / p ) * 0.5 + 1;
 
-		} else {
+			}
 
-			return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
+		},
+
+		Back: {
+			/** @ignore */
+			In: function ( k ) {
+
+				var s = 1.70158;
+				return k * k * ( ( s + 1 ) * k - s );
+
+			},
+			/** @ignore */
+			Out: function ( k ) {
+
+				var s = 1.70158;
+				return --k * k * ( ( s + 1 ) * k + s ) + 1;
+
+			},
+			/** @ignore */
+			InOut: function ( k ) {
+
+				var s = 1.70158 * 1.525;
+				if ( ( k *= 2 ) < 1 ) return 0.5 * ( k * k * ( ( s + 1 ) * k - s ) );
+				return 0.5 * ( ( k -= 2 ) * k * ( ( s + 1 ) * k + s ) + 2 );
+
+			}
+
+		},
+
+		Bounce: {
+			/** @ignore */
+			In: function ( k ) {
+
+				return 1 - me.Tween.Easing.Bounce.Out( 1 - k );
+
+			},
+			/** @ignore */
+			Out: function ( k ) {
+
+				if ( k < ( 1 / 2.75 ) ) {
+
+					return 7.5625 * k * k;
+
+				} else if ( k < ( 2 / 2.75 ) ) {
+
+					return 7.5625 * ( k -= ( 1.5 / 2.75 ) ) * k + 0.75;
+
+				} else if ( k < ( 2.5 / 2.75 ) ) {
+
+					return 7.5625 * ( k -= ( 2.25 / 2.75 ) ) * k + 0.9375;
+
+				} else {
+
+					return 7.5625 * ( k -= ( 2.625 / 2.75 ) ) * k + 0.984375;
+
+				}
+
+			},
+			/** @ignore */
+			InOut: function ( k ) {
+
+				if ( k < 0.5 ) return me.Tween.Easing.Bounce.In( k * 2 ) * 0.5;
+				return me.Tween.Easing.Bounce.Out( k * 2 - 1 ) * 0.5 + 0.5;
+
+			}
 
 		}
 
 	};
-	/** @ignore */
-	me.Tween.Easing.Bounce.EaseInOut = function(k) {
 
-		if (k < 0.5)
-			return me.Tween.Easing.Bounce.EaseIn(k * 2) * 0.5;
-		return me.Tween.Easing.Bounce.EaseOut(k * 2 - 1) * 0.5 + 0.5;
+	/* Interpolation Function :<br>
+	 * <p>
+	 * me.Tween.Interpolation.Linear<br>
+	 * me.Tween.Interpolation.Bezier<br>
+	 * me.Tween.Interpolation.CatmullRom<br>
+	 * </p>
+	 * @public
+	 * @constant
+	 * @type enum
+	 * @name me.Tween#Interpolation
+	 */
+	me.Tween.Interpolation = {
+		/** @ignore */
+		Linear: function ( v, k ) {
+
+			var m = v.length - 1, f = m * k, i = Math.floor( f ), fn = me.Tween.Interpolation.Utils.Linear;
+
+			if ( k < 0 ) return fn( v[ 0 ], v[ 1 ], f );
+			if ( k > 1 ) return fn( v[ m ], v[ m - 1 ], m - f );
+
+			return fn( v[ i ], v[ i + 1 > m ? m : i + 1 ], f - i );
+
+		},
+		/** @ignore */
+		Bezier: function ( v, k ) {
+
+			var b = 0, n = v.length - 1, pw = Math.pow, bn = me.Tween.Interpolation.Utils.Bernstein, i;
+
+			for ( i = 0; i <= n; i++ ) {
+				b += pw( 1 - k, n - i ) * pw( k, i ) * v[ i ] * bn( n, i );
+			}
+
+			return b;
+
+		},
+		/** @ignore */
+		CatmullRom: function ( v, k ) {
+
+			var m = v.length - 1, f = m * k, i = Math.floor( f ), fn = me.Tween.Interpolation.Utils.CatmullRom;
+
+			if ( v[ 0 ] === v[ m ] ) {
+
+				if ( k < 0 ) i = Math.floor( f = m * ( 1 + k ) );
+
+				return fn( v[ ( i - 1 + m ) % m ], v[ i ], v[ ( i + 1 ) % m ], v[ ( i + 2 ) % m ], f - i );
+
+			} else {
+
+				if ( k < 0 ) return v[ 0 ] - ( fn( v[ 0 ], v[ 0 ], v[ 1 ], v[ 1 ], -f ) - v[ 0 ] );
+				if ( k > 1 ) return v[ m ] - ( fn( v[ m ], v[ m ], v[ m - 1 ], v[ m - 1 ], f - m ) - v[ m ] );
+
+				return fn( v[ i ? i - 1 : 0 ], v[ i ], v[ m < i + 1 ? m : i + 1 ], v[ m < i + 2 ? m : i + 2 ], f - i );
+
+			}
+
+		},
+
+		Utils: {
+			/** @ignore */
+			Linear: function ( p0, p1, t ) {
+
+				return ( p1 - p0 ) * t + p0;
+
+			},
+			/** @ignore */
+			Bernstein: function ( n , i ) {
+
+				var fc = me.Tween.Interpolation.Utils.Factorial;
+				return fc( n ) / fc( i ) / fc( n - i );
+
+			},
+			/** @ignore */
+			Factorial: ( function () {
+
+				var a = [ 1 ];
+
+				return function ( n ) {
+
+					var s = 1, i;
+					if ( a[ n ] ) return a[ n ];
+					for ( i = n; i > 1; i-- ) s *= i;
+					return a[ n ] = s;
+
+				};
+
+			} )(),
+			/** @ignore */
+			CatmullRom: function ( p0, p1, p2, p3, t ) {
+
+				var v0 = ( p2 - p0 ) * 0.5, v1 = ( p3 - p1 ) * 0.5, t2 = t * t, t3 = t * t2;
+				return ( 2 * p1 - 2 * p2 + v0 + v1 ) * t3 + ( - 3 * p1 + 3 * p2 - 2 * v0 - v1 ) * t2 + v0 * t + p1;
+
+			}
+
+		}
 
 	};
 
-
-	/*---------------------------------------------------------*/
-	// END END END
-	/*---------------------------------------------------------*/
 })();
 
 /**

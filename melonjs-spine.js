@@ -30,34 +30,6 @@
 
         context.save();
         context.globalAlpha = slot.a;
-        /* var sourceAngle = attachment.rotation;
-        var xpos = ~~this.skeleton.getRootBone().x, ypos = ~~this.skeleton.getRootBone().y;
-
-        var w = attachment.regionWidth, h = attachment.regionHeight;
-        var angle = this.angle + sourceAngle;
-
-        if ((this.scaleFlag) || (angle!==0)) {
-          // translate to the defined anchor point
-          context.translate(xpos, ypos);
-          // scale
-          if (this.scaleFlag) {
-            context.scale(this.scale.x, this.scale.y);
-          }
-          if (angle!==0) {
-            context.rotate(angle);
-          }
-
-          if (sourceAngle!==0) {
-            // swap w and h for rotated source images
-            w = this.height, h = this.width;
-          }
-        }
-
-        context.drawImage(image,
-                attachment.regionOffsetX, attachment.regionOffsetY,
-                w, h,
-                xpos, ypos,
-                w, h); */
         
         attachment.computeVertices(this.skeleton.x, this.skeleton.y, slot.bone, this.vertices);
         var sx = attachment.uvs[4]*image.width, sy = attachment.uvs[5]*image.height;
@@ -65,6 +37,7 @@
         var dx = this.vertices[0]+this.skeleton.getRootBone().x, dy = this.vertices[1]+this.skeleton.getRootBone().y;
         var dw = (this.vertices[4]+this.skeleton.getRootBone().x)-dx, dh = (this.vertices[5]+this.skeleton.getRootBone().y)-dy;
         if(!this.debugged) {
+          console.log(slot.bone);
           console.log(slot.bone.data.name);
           console.log(attachment.uvs);
           console.log(attachment.offset);
@@ -88,7 +61,7 @@
     },
 
     initSpineObjects: function(x, y) {
-      var atlasText = me.loader.getTextFile(this.settings['atlas']);
+      var atlasText = me.loader.getBinary(this.settings['atlas']);
       var loader = new me.Spine.TextureLoader();
       loader.imagePath = this.settings.imagePath;
       var atlas = new spine.Atlas(atlasText, loader);
