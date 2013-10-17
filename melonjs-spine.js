@@ -49,7 +49,6 @@
             dw, dh);
           this.debugged = true;
         }
-        
         context.drawImage(image,
           sx, sy,
           sw, sh,
