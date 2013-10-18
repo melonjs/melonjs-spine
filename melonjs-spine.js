@@ -49,6 +49,7 @@
             dw, dh);
           this.debugged = true;
         }
+        context.rotate(slot.bone.rotation * Math.PI / 180);
         context.drawImage(image,
           sx, sy,
           sw, sh,
@@ -61,9 +62,17 @@
 
     initSpineObjects: function(x, y) {
       var atlasText = me.loader.getBinary(this.settings['atlas']);
-      var loader = new me.Spine.TextureLoader();
-      loader.imagePath = this.settings.imagePath;
-      var atlas = new spine.Atlas(atlasText, loader);
+      var atlas; 
+      var imagePath = this.settings.imagePath;
+      atlas = new spine.Atlas(atlasText, {
+        load: function (page, path) {
+          var texture = me.loader.getImage(imagePath);
+          page.rendererObject = texture;
+          page.width = texture.width;
+          page.height = texture.height;
+          atlas.updateUVs(page);
+        }
+      });
       var skeletonJson = new spine.SkeletonJson(new spine.AtlasAttachmentLoader(atlas));
       var skeletonData = skeletonJson.readSkeletonData(me.loader.getJSON(this.settings['spineData']));
       this.skeleton = new spine.Skeleton(skeletonData);
@@ -97,20 +106,6 @@
       this.time = me.timer.getTime();
 
       return true;
-    }
-  });
-
-  me.Spine.TextureLoader = Object.extend({
-    imagePath: null,
-    load: function (page, path, a) {
-      var texture = me.loader.getImage(this.imagePath);
-      page.rendererObject = texture;
-      page.width = texture.width;
-      page.height = texture.height;
-      a.updateUVs(page);
-    },
-    unload: function (texture) {
-      delete texture;
     }
   });
 
