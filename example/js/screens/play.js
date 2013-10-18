@@ -8,7 +8,7 @@ game.PlayScreen = me.ScreenObject.extend({
     p.time = me.timer.getTime();
     p.stateData.setMixByName("walk", "jump", 0.2);
     p.stateData.setMixByName("jump", "walk", 0.4);
-    p.state.setAnimationByName("walk", true);
+    p.state.setAnimationByName(0, "walk", true);
     p.z = 100;
     me.game.world.addChild(p);
   },
