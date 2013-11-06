@@ -26,8 +26,7 @@
         var slot = drawOrder[i];
         var attachment = slot.attachment;
         if (!(attachment instanceof spine.RegionAttachment)) continue;
-        var image = attachment.rendererObject.page.rendererObject;
-
+      var image = attachment.rendererObject.page.image;
         context.save();
         context.globalAlpha = slot.a;
 
@@ -68,7 +67,7 @@
         load: function (page, path) {
           setTimeout(function() {
             var texture = me.loader.getImage(imagePath);
-            page.rendererObject = texture;
+            page.image = texture;
             page.width = texture.width;
             page.height = texture.height;
             atlas.updateUVs(page);
