@@ -1,12 +1,11 @@
 game.PlayScreen = me.ScreenObject.extend({
-  /**
-   *  action to perform on state change
-   */
   onResetEvent : function() {
     me.levelDirector.loadLevel('level');
     this.setupInputBindings();
     game.player = new game.SpineBoy();
     me.game.world.addChild(game.player);
+    var instructions = new Instructions();
+    me.game.world.addChild(instructions);
   },
 
 
@@ -27,3 +26,15 @@ game.PlayScreen = me.ScreenObject.extend({
     me.input.bindTouch(me.input.KEY.P);
   }
 });
+
+var Instructions = me.Renderable.extend({
+  init : function() {
+    this.parent(new me.Vector2d(400, 500), 24, 400);
+    this.font = new me.Font('Arial', '20px', '#fff');
+    this.z = 2;
+  },
+
+  draw : function(context) {
+    this.font.draw(context, 'Arrow Keys/Touch', this.pos.x, this.pos.y);
+  },
+})
