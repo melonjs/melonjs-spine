@@ -8,7 +8,7 @@ var game = {
       alert("Your browser does not support HTML5 canvas.");
       return;
     }
-    
+
     // add "#debug" to the URL to enable the debug Panel
     if (document.location.hash === "#debug") {
       window.onReady(function () {
@@ -21,10 +21,10 @@ var game = {
 
     // Set a callback to run when loading is complete.
     me.loader.onload = this.loaded.bind(this);
-   
+
     // Load the resources.
     me.loader.preload(game.resources);
-
+    me.debug.renderHitBox = true;
     // Initialize melonJS and display a loading screen.
     me.state.change(me.state.LOADING);
   },

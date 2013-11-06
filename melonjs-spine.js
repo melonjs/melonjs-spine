@@ -2,9 +2,9 @@
   spine.Bone.yDown = true;
   me.Spine = {};
   me.Spine.Entity = me.ObjectEntity.extend({
-    init: function(x, y, settings) {
+    init : function(x, y, settings) {
       this.debugged = false;
-      if(isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
+      if(isNullOrUndefined(settings) || isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
         throw "Ensure atlas, imagePath and spineData are specified in the settings hash";
       }
       this.settings = settings;
@@ -18,7 +18,7 @@
       this.isRenderable = true;
     },
 
-    draw: function(context, rect) {
+    draw : function(context, rect) {
       this.parent(context, rect);
       var drawOrder = this.skeleton.drawOrder;
       for (var i = 0, n = drawOrder.length; i < n; i++) {
@@ -56,19 +56,19 @@
       }
     },
 
-    initSpineObjects: function(x, y) {
+    initSpineObjects : function(x, y) {
       var atlasText = me.loader.getBinary(this.settings['atlas']);
       var atlas;
       var imagePath = this.settings.imagePath;
       atlas = new spine.Atlas(atlasText, {
         load: function (page, path) {
-          setTimeout(function() {
+          (function() {
             var texture = me.loader.getImage(imagePath);
             page.image = texture;
             page.width = texture.width;
             page.height = texture.height;
             atlas.updateUVs(page);
-          }, 0);
+          }).defer();
         }
       });
       var skeletonJson = new spine.SkeletonJson(new spine.AtlasAttachmentLoader(atlas));
@@ -93,13 +93,18 @@
 
     },
 
-    update: function() {
-      this.parent(this);
+    update : function() {
+      this.parent();
       this.state.update((me.timer.getTime() - this.time) / 1000);
       this.state.apply(this.skeleton);
       this.skeleton.updateWorldTransform();
-      this.pos.x = this.skeleton.getRootBone().x;
-      this.pos.y = this.skeleton.getRootBone().y;
+
+      if(this.skeleton.getRootBone().x !== this.pos.x) {
+        this.skeleton.getRootBone().x = this.pos.x
+      }
+      if(this.skeleton.getRootBone().y !== this.pos.y) {
+        this.skeleton.getRootBone().y = this.pos.y
+      }
 
       this.time = me.timer.getTime();
 
