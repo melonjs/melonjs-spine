@@ -7,7 +7,6 @@
       if(isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
         throw "Ensure atlas, imagePath and spineData are specified in the settings hash";
       }
-      var image = me.loader.getImage(settings['imagePath']);
       this.settings = settings;
       this.time = me.timer.getTime();
       this.initSpineObjects(x, y);
@@ -26,35 +25,33 @@
         var slot = drawOrder[i];
         var attachment = slot.attachment;
         if (!(attachment instanceof spine.RegionAttachment)) continue;
-      var image = attachment.rendererObject.page.image;
-        context.save();
-        context.globalAlpha = slot.a;
-
         attachment.computeVertices(this.skeleton.x, this.skeleton.y, slot.bone, this.vertices);
-        var sx = attachment.uvs[4]*image.width, sy = attachment.uvs[5]*image.height;
-        var sw = attachment.uvs[0]*image.width - sx, sh = attachment.uvs[1]*image.height - sy;
-        var dx = this.vertices[0]+this.skeleton.getRootBone().x, dy = this.vertices[1]+this.skeleton.getRootBone().y;
-        var dw = (this.vertices[4]+this.skeleton.getRootBone().x)-dx, dh = (this.vertices[5]+this.skeleton.getRootBone().y)-dy;
-        if(!this.debugged) {
-          console.log(slot.bone);
-          console.log(slot.bone.data.name);
-          console.log(attachment.uvs);
-          console.log(attachment.offset);
-          console.log(this.vertices);
-          console.log(image,
-            sx, sy,
-            sw, sh,
-            dx, dy,
-            dw, dh);
-          this.debugged = true;
+
+        var x = this.vertices[2];
+        var y = this.vertices[3];
+
+        var w = attachment.rendererObject.width;
+        var h = attachment.rendererObject.height;
+        var px = attachment.rendererObject.x;
+        var py = attachment.rendererObject.y;
+
+        var scaleX = attachment.scaleX;
+        var scaleY = attachment.scaleY;
+        var angle = -(slot.bone.worldRotation + attachment.rotation) * Math.PI/180;
+        if(this.skeleton.flipX) {
+          scaleX *= -1;
+          angle *= -1;
         }
-        context.rotate(slot.bone.rotation * Math.PI / 180);
-        context.drawImage(image,
-          sx, sy,
-          sw, sh,
-          dx, dy,
-          dw, dh
-        );
+        if(this.skeleton.flipY) {
+          scaleY *= -1;
+          angle *= -1;
+        }
+        context.save();
+        context.translate(x, y);
+        context.rotate(angle);
+        context.scale(scaleX, scaleY);
+
+        context.drawImage(attachment.rendererObject.page.image, px, py, w, h, 0, 0, w, h);
         context.restore();
       }
     },
