@@ -9,26 +9,35 @@ game.SpineBoy = me.Spine.Entity.extend({
     this.z = 2;
   },
 
+  moveLeft : function() {
+    this.skeleton.flipX = true;
+    this.vel.x -= this.accel.x;
+  },
+
+  moveRight : function() {
+    this.skeleton.flipX = false;
+    this.vel.x += this.accel.x;
+  },
+
   update : function() {
     this.parent();
     var moved = false;
     if(me.input.isKeyPressed('left')) {
-      this.skeleton.flipX = true;
-      this.vel.x -= this.accel.x;
+      this.moveLeft();
       moved = true;
     }
     else if(me.input.isKeyPressed('right')) {
-      this.skeleton.flipX = false;
-      this.vel.x += this.accel.x;
+      this.moveRight();
       moved = true;
     }
-    else if(me.input.isKeyPressed('moved')) {
+    else if(me.input.isKeyPressed('move')) {
       if(me.input.mouse.pos.x > me.game.viewport.width / 2) {
-        this.vel.x += this.accel.x;
+        this.moveRight();
       }
       else {
-        this.vel.x -= this.accel.x;
+        this.moveLeft();
       }
+      moved = true;
     }
     if(moved) {
       this.updateMovement();
