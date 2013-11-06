@@ -17,12 +17,14 @@ game.PlayScreen = me.ScreenObject.extend({
     me.input.unbindKey(me.input.KEY.LEFT);
     me.input.unbindKey(me.input.KEY.RIGHT);
     me.input.unbindKey(me.input.KEY.P);
+    me.input.unbindKey(me.input.KEY.SPACE);
   },
 
   setupInputBindings : function() {
     me.input.bindKey(me.input.KEY.LEFT, 'left');
     me.input.bindKey(me.input.KEY.RIGHT, 'right');
     me.input.bindKey(me.input.KEY.P, 'move');
+    me.input.bindKey(me.input.KEY.SPACE, 'jump', true);
     me.input.bindTouch(me.input.KEY.P);
   }
 });

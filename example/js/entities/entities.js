@@ -7,6 +7,7 @@ game.SpineBoy = me.Spine.Entity.extend({
     this.state.setAnimationByName(0, "walk", true);
     this.setVelocity(5, 0);
     this.z = 2;
+    this.jumping = false;
   },
 
   moveLeft : function() {
@@ -39,8 +40,16 @@ game.SpineBoy = me.Spine.Entity.extend({
       }
       moved = true;
     }
+    if(me.input.isKeyPressed('jump')) {
+      this.state.setAnimationByName(0, "jump", false);
+      this.state.addAnimationByName(0, "walk", true, 0);
+      this.jumping = true;
+    }
     if(moved) {
       this.updateMovement();
+      return true;
+    }
+    else if(this.jumping) {
       return true;
     }
     else {
