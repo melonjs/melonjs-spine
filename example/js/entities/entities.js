@@ -22,6 +22,14 @@ game.SpineBoy = me.Spine.Entity.extend({
       this.vel.x += this.accel.x;
       moved = true;
     }
+    else if(me.input.isKeyPressed('moved')) {
+      if(me.input.mouse.pos.x > me.game.viewport.width / 2) {
+        this.vel.x += this.accel.x;
+      }
+      else {
+        this.vel.x -= this.accel.x;
+      }
+    }
     if(moved) {
       this.updateMovement();
       return true;
