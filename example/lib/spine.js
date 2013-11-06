@@ -532,20 +532,22 @@ spine.EventTimeline.prototype = {
 		this.frames[frameIndex] = time;
 		this.events[frameIndex] = event;
 	},
+	/** Fires events for frames > lastTime and <= time. */
 	apply: function (skeleton, lastTime, time, firedEvents, alpha) {
 		if (!firedEvents) return;
 
 		var frames = this.frames;
 		var frameCount = frames.length;
-		if (lastTime >= frames[frameCount - 1]) return; // Last time is after last frame.
 
 		if (lastTime > time) { // Fire events after last time for looped animations.
-			this.apply(skeleton, lastTime, Number.MAX_VALUE, firedEvents, alpha);
-			lastTime = 0;
-		}
+			apply(skeleton, lastTime, Number.MAX_VALUE, firedEvents, alpha);
+			lastTime = -1;
+		} else if (lastTime >= frames[frameCount - 1]) // Last time is after last frame.
+			return;
+		if (time < frames[0]) return; // Time is before first frame.
 
 		var frameIndex;
-		if (lastTime <= frames[0] || frameCount == 1)
+		if (lastTime < frames[0])
 			frameIndex = 0;
 		else {
 			frameIndex = spine.binarySearch(frames, lastTime, 1);
@@ -947,7 +949,7 @@ spine.TrackEntry.prototype = {
 	next: null, previous: null,
 	animation: null,
 	loop: false,
-	delay: 0, time: 0, lastTime: 0, endTime: 0,
+	delay: 0, time: 0, lastTime: -1, endTime: 0,
 	timeScale: 1,
 	mixTime: 0, mixDuration: 0,
 	onStart: null, onEnd: null, onComplete: null, onEvent: null
@@ -1108,10 +1110,9 @@ spine.AnimationState.prototype = {
 			this.tracks[trackIndex] = entry;
 
 		if (delay <= 0) {
-			if (last) {
-				if (last.time < last.endTime) delay += last.endTime - last.time;
-				delay -= this.data.getMix(last.animation, animation);
-			} else
+			if (last)
+				delay += last.endTime - this.data.getMix(last.animation, animation);
+			else
 				delay = 0;
 		}
 		entry.delay = delay;

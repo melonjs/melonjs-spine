@@ -14,7 +14,7 @@
       this.parent(x, y, this.settings);
       this.anchorPoint.x = 0.5;
       this.anchorPoint.y = 0.5;
-      
+
       this.vertices = Array(8);
       this.isRenderable = true;
     },
@@ -30,7 +30,7 @@
 
         context.save();
         context.globalAlpha = slot.a;
-        
+
         attachment.computeVertices(this.skeleton.x, this.skeleton.y, slot.bone, this.vertices);
         var sx = attachment.uvs[4]*image.width, sy = attachment.uvs[5]*image.height;
         var sw = attachment.uvs[0]*image.width - sx, sh = attachment.uvs[1]*image.height - sy;
@@ -62,7 +62,7 @@
 
     initSpineObjects: function(x, y) {
       var atlasText = me.loader.getBinary(this.settings['atlas']);
-      var atlas; 
+      var atlas;
       var imagePath = this.settings.imagePath;
       atlas = new spine.Atlas(atlasText, {
         load: function (page, path) {
@@ -83,7 +83,7 @@
       this.skeleton.getRootBone().y = y;
       this.skeleton.updateWorldTransform();
 
-      this.stateData = new spine.AnimationStateData(skeletonData); 
+      this.stateData = new spine.AnimationStateData(skeletonData);
       this.state = new spine.AnimationState(this.stateData);
       for(var i = 0; i < atlas.regions.length; i++) {
         var region = atlas.regions[i];
@@ -94,7 +94,7 @@
           this.settings['spriteheight'] = this.height;
         }
       }
-      
+
     },
 
     update: function() {
