@@ -98,12 +98,12 @@
       this.state.update((me.timer.getTime() - this.time) / 1000);
       this.state.apply(this.skeleton);
       this.skeleton.updateWorldTransform();
-
-      if(this.skeleton.getRootBone().x !== this.pos.x) {
-        this.skeleton.getRootBone().x = this.pos.x
+      var rootBone = this.skeleton.getRootBone();
+      if(rootBone.x !== this.pos.x) {
+        rootBone.x = this.pos.x
       }
-      if(this.skeleton.getRootBone().y !== this.pos.y) {
-        this.skeleton.getRootBone().y = this.pos.y
+      if(rootBone.y !== this.pos.y) {
+        rootBone.y = this.pos.y
       }
 
       this.time = me.timer.getTime();
