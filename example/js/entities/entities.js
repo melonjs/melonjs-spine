@@ -1,9 +1,10 @@
+var change = 'goblin';
 game.SpineBoy = me.Spine.Entity.extend({
   init : function() {
-    var settings = { atlas : 'spineboy_atlas', imagePath : 'spineboy_atlas', spineData : 'spineboy', name : 'spineboy' };
+    var settings = { atlas : 'goblins_atlas', imagePath : 'goblins_atlas', spineData : 'goblins', name : 'goblins' };
     this.parent(200, 340, settings);
-    this.stateData.setMixByName("walk", "jump", 0.2);
-    this.stateData.setMixByName("jump", "walk", 0.4);
+    this.skeleton.setSkinByName('goblingirl');
+    this.skeleton.setSlotsToSetupPose();
     this.state.setAnimationByName(0, "walk", true);
     this.setVelocity(5, 0);
     this.z = 2;
@@ -40,20 +41,27 @@ game.SpineBoy = me.Spine.Entity.extend({
       }
       moved = true;
     }
-    if(me.input.isKeyPressed('jump')) {
-      this.state.setAnimationByName(0, "jump", false);
-      this.state.addAnimationByName(0, "walk", true, 0);
-      this.jumping = true;
+    else if(me.input.isKeyPressed('change')) {
+      this.skeleton.setSkinByName(change);
+      this.updateChangeSkin();
+      this.skeleton.setSlotsToSetupPose();
+      this.state.setAnimationByName(0, "walk", true);
     }
     if(moved) {
       this.updateMovement();
       return true;
     }
-    else if(this.jumping) {
-      return true;
-    }
     else {
       return false;
+    }
+  },
+
+  updateChangeSkin : function() {
+    if(change == 'goblin') {
+      change = 'goblingirl';
+    }
+    else {
+      change = 'goblin';
     }
   }
 });

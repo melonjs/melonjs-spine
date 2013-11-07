@@ -24,7 +24,7 @@ game.PlayScreen = me.ScreenObject.extend({
     me.input.bindKey(me.input.KEY.LEFT, 'left');
     me.input.bindKey(me.input.KEY.RIGHT, 'right');
     me.input.bindKey(me.input.KEY.P, 'move');
-    me.input.bindKey(me.input.KEY.SPACE, 'jump', true);
+    me.input.bindKey(me.input.KEY.SPACE, 'change', true);
     me.input.bindTouch(me.input.KEY.P);
   }
 });

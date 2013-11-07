@@ -1,13 +1,13 @@
 /******************************************************************************
  * Spine Runtime Software License - Version 1.1
- * 
+ *
  * Copyright (c) 2013, Esoteric Software
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms in whole or in part, with
  * or without modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. A Spine Essential, Professional, Enterprise, or Education License must
  *    be purchased from Esoteric Software and the license must remain valid:
  *    http://esotericsoftware.com/
@@ -18,7 +18,7 @@
  *    above copyright notice, this declaration of conditions and the following
  *    disclaimer, in the documentation and/or other materials provided with the
  *    distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -1036,7 +1036,7 @@ spine.AnimationState.prototype = {
 	clearTracks: function () {
 		for (var i = 0, n = this.tracks.length; i < n; i++)
 			this.clearTrack(i);
-		this.tracks.length = 0; 
+		this.tracks.length = 0;
 	},
 	clearTrack: function (trackIndex) {
 		if (trackIndex >= this.tracks.length) return;
@@ -1451,7 +1451,7 @@ spine.Atlas = function (atlasText, textureLoader) {
 			else if (direction == "xy")
 				page.uWrap = page.vWrap = spine.Atlas.TextureWrap.repeat;
 
-			textureLoader.load(page, line);
+			textureLoader.load(page, line, this);
 
 			this.pages.push(page);
 

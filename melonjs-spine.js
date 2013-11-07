@@ -61,14 +61,12 @@
       var atlas;
       var imagePath = this.settings.imagePath;
       atlas = new spine.Atlas(atlasText, {
-        load: function (page, path) {
-          (function() {
-            var texture = me.loader.getImage(imagePath);
-            page.image = texture;
-            page.width = texture.width;
-            page.height = texture.height;
-            atlas.updateUVs(page);
-          }).defer();
+        load: function (page, path, atlas) {
+          var texture = me.loader.getImage(imagePath);
+          page.image = texture;
+          page.width = texture.width;
+          page.height = texture.height;
+          atlas.updateUVs(page);
         }
       });
       var skeletonJson = new spine.SkeletonJson(new spine.AtlasAttachmentLoader(atlas));
