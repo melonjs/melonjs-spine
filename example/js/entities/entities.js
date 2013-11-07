@@ -41,7 +41,7 @@ game.SpineBoy = me.Spine.Entity.extend({
       }
       moved = true;
     }
-    else if(me.input.isKeyPressed('change')) {
+    if(me.input.isKeyPressed('change')) {
       this.skeleton.setSkinByName(change);
       this.updateChangeSkin();
       this.skeleton.setSlotsToSetupPose();
