@@ -96,9 +96,6 @@
 
     update : function() {
       this.parent();
-      this.state.update((me.timer.getTime() - this.time) / 1000);
-      this.state.apply(this.skeleton);
-      this.skeleton.updateWorldTransform();
       var rootBone = this.skeleton.getRootBone();
       if(rootBone.x !== this.pos.x) {
         rootBone.x = this.pos.x
@@ -106,6 +103,9 @@
       if(rootBone.y !== this.pos.y) {
         rootBone.y = this.pos.y
       }
+      this.state.update((me.timer.getTime() - this.time) / 1000);
+      this.state.apply(this.skeleton);
+      this.skeleton.updateWorldTransform();
 
       this.time = me.timer.getTime();
 

@@ -29,7 +29,6 @@ game.SpineBoy = me.Spine.Entity.extend({
   },
 
   update : function() {
-    this.parent();
     if(me.input.isKeyPressed('left')) {
       this.moveLeft();
     }
@@ -54,6 +53,7 @@ game.SpineBoy = me.Spine.Entity.extend({
       this.state.setAnimationByName(0, "walk", true);
     }
     this.updateMovement();
+    this.parent();
     if(this.vel.x !== 0 || this.vel.y !== 0) {
       return true;
     }
