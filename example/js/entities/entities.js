@@ -11,6 +11,13 @@ game.SpineBoy = me.Spine.Entity.extend({
     this.jumping = false;
   },
 
+  draw : function(context) {
+    this.parent(context);
+    context.strokeStyle = '#f00';
+    var collisionBox = this.collisionBox;
+    context.strokeRect(collisionBox.left, collisionBox.top, collisionBox.width, collisionBox.height);
+  },
+
   moveLeft : function() {
     this.skeleton.flipX = true;
     this.vel.x -= this.accel.x;

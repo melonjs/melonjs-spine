@@ -31,12 +31,12 @@ game.PlayScreen = me.ScreenObject.extend({
 
 var Instructions = me.Renderable.extend({
   init : function() {
-    this.parent(new me.Vector2d(400, 500), 24, 400);
+    this.parent(new me.Vector2d(300, 500), 24, 400);
     this.font = new me.Font('Arial', '20px', '#fff');
     this.z = 2;
   },
 
   draw : function(context) {
-    this.font.draw(context, 'Arrow Keys/Touch', this.pos.x, this.pos.y);
+    this.font.draw(context, 'Arrow Keys/Touch. Space to change', this.pos.x, this.pos.y);
   },
 })

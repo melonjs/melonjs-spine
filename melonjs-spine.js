@@ -11,6 +11,7 @@
       this.time = me.timer.getTime();
       this.initSpineObjects(x, y);
       this.parent(x, y, this.settings);
+      this.updateColRect(-(this.width / 2), this.width, -this.height, this.height);
       this.anchorPoint.x = 0.5;
       this.anchorPoint.y = 0.5;
 
@@ -18,8 +19,8 @@
       this.isRenderable = true;
     },
 
-    draw : function(context, rect) {
-      this.parent(context, rect);
+    draw : function(context) {
+      this.parent(context);
       var drawOrder = this.skeleton.drawOrder;
       for (var i = 0, n = drawOrder.length; i < n; i++) {
         var slot = drawOrder[i];
@@ -79,16 +80,18 @@
 
       this.stateData = new spine.AnimationStateData(skeletonData);
       this.state = new spine.AnimationState(this.stateData);
+      var initialRect = new me.Rect(new me.Vector2d(x, y), 0, 0);
+      var tempRect = new me.Rect(new me.Vector2d(), 0, 0);
       for(var i = 0; i < atlas.regions.length; i++) {
         var region = atlas.regions[i];
-        if(region.name == this.settings['name']) {
-          this.width = region.width;
-          this.height = region.height;
-          this.settings['spritewidth'] = this.width;
-          this.settings['spriteheight'] = this.height;
-        }
+        tempRect.width = region.width;
+        tempRect.height = region.height;
+        tempRect.x = region.x;
+        tempRect.y = region.y;
+        initialRect.union(tempRect);
       }
-
+      this.settings.spritewidth = initialRect.width;
+      this.settings.spriteheight = initialRect.height;
     },
 
     update : function() {
