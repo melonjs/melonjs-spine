@@ -6,7 +6,7 @@ game.SpineBoy = me.Spine.Entity.extend({
     this.skeleton.setSkinByName('goblingirl');
     this.skeleton.setSlotsToSetupPose();
     this.state.setAnimationByName(0, "walk", true);
-    this.setVelocity(5, 0);
+    this.setVelocity(5, 10);
     this.z = 2;
     this.jumping = false;
   },
@@ -30,14 +30,11 @@ game.SpineBoy = me.Spine.Entity.extend({
 
   update : function() {
     this.parent();
-    var moved = false;
     if(me.input.isKeyPressed('left')) {
       this.moveLeft();
-      moved = true;
     }
     else if(me.input.isKeyPressed('right')) {
       this.moveRight();
-      moved = true;
     }
     else if(me.input.isKeyPressed('move')) {
       if(me.input.mouse.pos.x > me.game.viewport.width / 2) {
@@ -46,7 +43,9 @@ game.SpineBoy = me.Spine.Entity.extend({
       else {
         this.moveLeft();
       }
-      moved = true;
+    }
+    else {
+      this.vel.x = 0;
     }
     if(me.input.isKeyPressed('change')) {
       this.skeleton.setSkinByName(change);
@@ -54,8 +53,8 @@ game.SpineBoy = me.Spine.Entity.extend({
       this.skeleton.setSlotsToSetupPose();
       this.state.setAnimationByName(0, "walk", true);
     }
-    if(moved) {
-      this.updateMovement();
+    this.updateMovement();
+    if(this.vel.x !== 0 || this.vel.y !== 0) {
       return true;
     }
     else {

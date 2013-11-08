@@ -3,8 +3,9 @@ game.PlayScreen = me.ScreenObject.extend({
     me.levelDirector.loadLevel('level');
     this.setupInputBindings();
     game.player = new game.SpineBoy();
-    me.game.world.addChild(game.player);
     var instructions = new Instructions();
+
+    me.game.world.addChild(game.player);
     me.game.world.addChild(instructions);
   },
 
