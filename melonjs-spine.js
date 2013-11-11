@@ -12,8 +12,6 @@
       this.initSpineObjects(x, y);
       this.parent(x, y, this.settings);
       this.updateColRect(-(this.width / 2), this.width, -this.height, this.height);
-      this.anchorPoint.x = 0.5;
-      this.anchorPoint.y = 0.5;
 
       this.vertices = Array(8);
       this.isRenderable = true;
