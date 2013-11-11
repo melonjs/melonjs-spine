@@ -21,11 +21,15 @@ me.loader.onload = function() {
         beforeEach(function() {
           entity = new me.Spine.Entity(0, 0, fixturedSettings);
         });
+
         it('has settings defined', function() {
           expect(entity.settings).toBeDefined();
-        })
+        });
+
+        it('vertices should be an array', function() {
+          expect(entity.vertices).toEqual(jasmine.any(Array));
+        });
       });
-      it('');
     });
   });
 
