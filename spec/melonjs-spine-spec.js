@@ -29,6 +29,52 @@ me.loader.onload = function() {
         it('vertices should be an array', function() {
           expect(entity.vertices).toEqual(jasmine.any(Array));
         });
+
+        it('time is set', function() {
+          expect(entity.time).toEqual(jasmine.any(Number));
+        });
+      });
+    });
+
+    describe('#initSpineObjects', function() {
+      beforeEach(function() {
+        entity = new me.Spine.Entity(10, 0, fixturedSettings);
+      });
+
+      it('skeleton should be defined', function() {
+        expect(entity.skeleton).toBeDefined();
+      });
+
+      it('the rootbone x is equal to the object position', function() {
+        expect(entity.skeleton.getRootBone().x).toEqual(10);
+      });
+
+      it('stateData should be defined', function() {
+        expect(entity.stateData).toBeDefined();
+      });
+
+      it('state should be defined', function() {
+        expect(entity.state).toBeDefined();
+      });
+
+      it('spritewidth should be set to a number', function() {
+        expect(entity.settings.spritewidth).toEqual(jasmine.any(Number));
+      });
+
+      it('spriteheight should be set to a number', function() {
+        expect(entity.settings.spriteheight).toEqual(jasmine.any(Number));
+      });
+    });
+
+    describe('#update', function() {
+      beforeEach(function() {
+        entity = new me.Spine.Entity(100, 100, fixturedSettings);
+        spyOn(entity, 'parent');
+      });
+
+      it('should invoke the parent', function() {
+        entity.update();
+        expect(entity.parent).toHaveBeenCalled();
       });
     });
   });

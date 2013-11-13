@@ -1,12 +1,18 @@
 var change = 'goblin';
 game.SpineBoy = me.Spine.Entity.extend({
   init : function() {
-    var settings = { atlas : 'goblins_atlas', imagePath : 'goblins_atlas', spineData : 'goblins', name : 'goblins' };
+    var settings = {
+      atlas : 'goblins_atlas',
+      imagePath : 'goblins_atlas',
+      spineData : 'goblins',
+      name : 'goblins'
+    };
     this.parent(200, 340, settings);
     this.skeleton.setSkinByName('goblingirl');
     this.skeleton.setSlotsToSetupPose();
     this.state.setAnimationByName(0, "walk", true);
     this.setVelocity(5, 10);
+    this.anchorPoint = new me.Vector2d(0.5, 1.0);
     this.z = 2;
     this.jumping = false;
   },

@@ -1,5 +1,18 @@
 (function() {
   spine.Bone.yDown = true;
+  function initAtlas(settings) {
+    var atlasText = me.loader.getBinary(settings['atlas']);
+    var imagePath = settings.imagePath;
+    return new spine.Atlas(atlasText, {
+      load: function (page, path, atlas) {
+        var texture = me.loader.getImage(imagePath);
+        page.image = texture;
+        page.width = texture.width;
+        page.height = texture.height;
+        atlas.updateUVs(page);
+      }
+    });
+  }
   me.Spine = {};
   me.Spine.Entity = me.ObjectEntity.extend({
     init : function(x, y, settings) {
@@ -11,10 +24,9 @@
       this.time = me.timer.getTime();
       this.initSpineObjects(x, y);
       this.parent(x, y, this.settings);
-      this.updateColRect(-(this.width / 2), this.width, -this.height, this.height);
+      this.updateColRect(-(this.width * this.anchorPoint.x), this.width, -this.height*this.anchorPoint.y, this.height);
 
       this.vertices = Array(8);
-      this.isRenderable = true;
     },
 
     draw : function(context) {
@@ -56,18 +68,7 @@
     },
 
     initSpineObjects : function(x, y) {
-      var atlasText = me.loader.getBinary(this.settings['atlas']);
-      var atlas;
-      var imagePath = this.settings.imagePath;
-      atlas = new spine.Atlas(atlasText, {
-        load: function (page, path, atlas) {
-          var texture = me.loader.getImage(imagePath);
-          page.image = texture;
-          page.width = texture.width;
-          page.height = texture.height;
-          atlas.updateUVs(page);
-        }
-      });
+      var atlas = initAtlas(this.settings);
       var skeletonJson = new spine.SkeletonJson(new spine.AtlasAttachmentLoader(atlas));
       var skeletonData = skeletonJson.readSkeletonData(me.loader.getJSON(this.settings['spineData']));
       this.skeleton = new spine.Skeleton(skeletonData);
