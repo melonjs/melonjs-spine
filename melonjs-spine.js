@@ -24,7 +24,6 @@
       this.time = me.timer.getTime();
       this.initSpineObjects(x, y);
       this.parent(x, y, this.settings);
-      this.updateColRect(-(this.width * this.anchorPoint.x), this.width, -this.height*this.anchorPoint.y, this.height);
 
       this.vertices = Array(8);
     },
@@ -109,6 +108,10 @@
       this.time = me.timer.getTime();
 
       return true;
+    },
+
+    updateColRectToAnchorPoint : function() {
+      this.updateColRect(-(this.width * this.anchorPoint.x), this.width, -this.height*this.anchorPoint.y, this.height);
     }
   });
 
