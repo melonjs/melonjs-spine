@@ -69,12 +69,12 @@ me.loader.onload = function() {
     describe('#update', function() {
       beforeEach(function() {
         entity = new me.Spine.Entity(100, 100, fixturedSettings);
-        spyOn(entity, 'parent');
       });
 
-      it('should invoke the parent', function() {
+      it('entity skeleton should update', function() {
+        spyOn(entity.skeleton, 'updateWorldTransform');
         entity.update();
-        expect(entity.parent).toHaveBeenCalled();
+        expect(entity.skeleton.updateWorldTransform).toHaveBeenCalled();
       });
     });
   });
