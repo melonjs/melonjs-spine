@@ -1,0 +1,15 @@
+{
+  "name": "melonjs-spine",
+  "version": "0.1.0",
+  "author": {
+    "name": "aaron mcleod"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agmcleod/melonjs-spine.git"
+  },
+  "devDependencies": {
+    "karma": "~0.10",
+    "karma-coverage": "~0.1"
+  }
+}
