@@ -14,7 +14,7 @@
     });
   }
   me.Spine = {};
-  me.Spine.Entity = me.ObjectEntity.extend({
+  me.Spine.Entity = me.Entity.extend({
     init : function(x, y, settings) {
       this.debugged = false;
       if(isNullOrUndefined(settings) || isNullOrUndefined(settings['atlas']) || isNullOrUndefined(settings['imagePath']) || isNullOrUndefined(settings['spineData'])) {
@@ -23,13 +23,13 @@
       this.settings = settings;
       this.time = me.timer.getTime();
       this.initSpineObjects(x, y);
-      this.parent(x, y, this.settings);
-
+      this._super(me.Entity, "init", [x, y, this.settings]);
+      this.body.addShape(new me.Rect(0, 0, this.width, this.height));
       this.vertices = Array(8);
     },
 
-    draw : function(context) {
-      this.parent(context);
+    draw : function(renderer) {
+      this._super(me.Entity, "draw", [renderer]);
       var drawOrder = this.skeleton.drawOrder;
       for (var i = 0, n = drawOrder.length; i < n; i++) {
         var slot = drawOrder[i];
@@ -56,13 +56,13 @@
           scaleY *= -1;
           angle *= -1;
         }
-        context.save();
-        context.translate(x, y);
-        context.rotate(angle);
-        context.scale(scaleX, scaleY);
+        renderer.save();
+        renderer.translate(x, y);
+        renderer.rotate(angle);
+        renderer.scale(scaleX, scaleY);
 
-        context.drawImage(attachment.rendererObject.page.image, px, py, w, h, 0, 0, w, h);
-        context.restore();
+        renderer.drawImage(attachment.rendererObject.page.image, px, py, w, h, 0, 0, w, h);
+        renderer.restore();
       }
     },
 
@@ -78,8 +78,8 @@
 
       this.stateData = new spine.AnimationStateData(skeletonData);
       this.state = new spine.AnimationState(this.stateData);
-      var initialRect = new me.Rect(new me.Vector2d(x, y), 0, 0);
-      var tempRect = new me.Rect(new me.Vector2d(), 0, 0);
+      var initialRect = new me.Rect(x, y, 0, 0);
+      var tempRect = new me.Rect(0, 0, 0, 0);
       for(var i = 0; i < atlas.regions.length; i++) {
         var region = atlas.regions[i];
         tempRect.width = region.width;
@@ -88,12 +88,12 @@
         tempRect.y = region.y;
         initialRect.union(tempRect);
       }
-      this.settings.spritewidth = initialRect.width;
-      this.settings.spriteheight = initialRect.height;
+      this.settings.width = initialRect.width;
+      this.settings.height = initialRect.height;
     },
 
-    update : function() {
-      this.parent();
+    update : function(delta) {
+      this._super(me.Entity, "update", delta);
       var rootBone = this.skeleton.getRootBone();
       if(rootBone.x !== this.pos.x) {
         rootBone.x = this.pos.x
@@ -111,7 +111,9 @@
     },
 
     updateColRectToAnchorPoint : function() {
-      this.updateColRect(-(this.width * this.anchorPoint.x), this.width, -this.height*this.anchorPoint.y, this.height);
+      var shape = this.body.getShape(0);
+      shape.translate(-(this.width * this.anchorPoint.x), -this.height*this.anchorPoint.y);
+      this.body.updateBounds();
     }
   });
 

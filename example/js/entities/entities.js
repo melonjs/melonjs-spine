@@ -7,32 +7,29 @@ game.SpineBoy = me.Spine.Entity.extend({
       spineData : 'goblins',
       name : 'goblins'
     };
-    this.parent(200, 340, settings);
+    this._super(me.Spine.Entity, "init", [200, 340, settings]);
     this.anchorPoint = new me.Vector2d(0.5, 1.0);
     this.updateColRectToAnchorPoint();
     this.skeleton.setSkinByName('goblingirl');
     this.skeleton.setSlotsToSetupPose();
     this.state.setAnimationByName(0, "walk", true);
-    this.setVelocity(5, 10);
+    this.body.setVelocity(5, 10);
     this.z = 2;
     this.jumping = false;
   },
 
-  draw : function(context) {
-    this.parent(context);
-    context.strokeStyle = '#f00';
-    var collisionBox = this.collisionBox;
-    context.strokeRect(collisionBox.left, collisionBox.top, collisionBox.width, collisionBox.height);
-  },
-
   moveLeft : function() {
     this.skeleton.flipX = true;
-    this.vel.x -= this.accel.x;
+    this.body.vel.x -= this.body.accel.x;
   },
 
   moveRight : function() {
     this.skeleton.flipX = false;
-    this.vel.x += this.accel.x;
+    this.body.vel.x += this.body.accel.x;
+  },
+
+  onCollision: function (response, other) {
+    return true;
   },
 
   update : function() {
@@ -51,7 +48,7 @@ game.SpineBoy = me.Spine.Entity.extend({
       }
     }
     else {
-      this.vel.x = 0;
+      this.body.vel.x = 0;
     }
     if(me.input.isKeyPressed('change')) {
       this.skeleton.setSkinByName(change);
@@ -59,9 +56,12 @@ game.SpineBoy = me.Spine.Entity.extend({
       this.skeleton.setSlotsToSetupPose();
       this.state.setAnimationByName(0, "walk", true);
     }
-    this.updateMovement();
-    this.parent();
-    if(this.vel.x !== 0 || this.vel.y !== 0) {
+    this.body.update();
+
+    me.collision.check(this);
+
+    this._super(me.Spine.Entity, "update");
+    if(this.body.vel.x !== 0 || this.body.vel.y !== 0) {
       return true;
     }
     else {
