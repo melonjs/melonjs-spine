@@ -93,7 +93,7 @@
     },
 
     update : function(delta) {
-      this._super(me.Entity, "update", delta);
+      this._super(me.Entity, "update", [delta]);
       var rootBone = this.skeleton.getRootBone();
       if(rootBone.x !== this.pos.x) {
         rootBone.x = this.pos.x
